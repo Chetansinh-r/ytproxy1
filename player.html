@@ -1,172 +1,257 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <style>
-      html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background: #000;
-        overflow: hidden;
-      }
-      #youTubePlayer {
-        width: 100%;
-        height: 100%;
-      }
-    </style>
-    <script src="https://www.youtube.com/iframe_api" async></script>
-  </head>
-  <body>
+<head>
+  <meta charset="utf-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: black;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    }
+
+    #playerWrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: black;
+    }
+
+    #youTubePlayer {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ---------- CONTROLS ---------- */
+
+    #controls {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 12px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    #playerWrapper:hover #controls {
+      opacity: 1;
+    }
+
+    #seek {
+      width: 100%;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .spacer {
+      flex: 1;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      color: white;
+      opacity: 0.85;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+      padding: 4px;
+    }
+
+    .icon-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    .icon-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+
+    input[type="range"] {
+      accent-color: white;
+      cursor: pointer;
+    }
+
+    #time {
+      color: white;
+      font-size: 12px;
+      min-width: 90px;
+      text-align: center;
+      opacity: 0.85;
+    }
+
+    select {
+      background: transparent;
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
+  </style>
+
+  <script src="https://www.youtube.com/iframe_api" async></script>
+</head>
+
+<body>
+  <div id="playerWrapper">
     <div id="youTubePlayer"></div>
 
-    <script>
-      const q = new URLSearchParams(location.search);
-      const videoId = q.get("videoId") || "";
-      const startAt = parseFloat(q.get("start") || "0");
+    <div id="controls">
+      <input id="seek" type="range" min="0" max="1000" value="0" />
 
-      const STATES = {
-        [-1]: "UNSTARTED",
-        0: "ENDED",
-        1: "PLAYING",
-        2: "PAUSED",
-        3: "BUFFERING",
-        5: "CUED",
-      };
+      <div class="row">
+        <button id="playBtn" class="icon-btn">
+          <svg id="playIcon" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none">
+            <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
+          </svg>
+        </button>
 
-      let player, timer;
-      // let lastVolume = -1;
-      // let lastMuted = null;
-      // let volumeDebounceTimer = null;
+        <button id="muteBtn" class="icon-btn">
+          <svg id="volIcon" viewBox="0 0 24 24">
+            <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+          </svg>
+        </button>
 
-      function onYouTubeIframeAPIReady() {
-        player = new YT.Player("youTubePlayer", {
-          width: "100%",
-          height: "100%",
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            cc_load_policy: 0,
-            fs: 1,
-            iv_load_policy: 3,
-            rel: 0,
-            enablejsapi: 1,
-            mute: 1,
-            playsinline: 1,
-            origin: location.origin,
-            modestbranding: 1,
-            disablekb: 1,
-            showinfo: 0,
+        <input id="volume" type="range" min="0" max="100" value="100" />
+
+        <div id="time">0:00 / 0:00</div>
+
+        <div class="spacer"></div>
+
+        <select id="speed">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+
+        <button id="fsBtn" class="icon-btn">
+          <svg id="fsEnter" viewBox="0 0 24 24">
+            <path d="M7 14H5v5h5v-2H7v-3zm0-4h2V7h3V5H7v5zm10 9h-3v2h5v-5h-2v3zm-3-14v2h3v3h2V5h-5z"/>
+          </svg>
+          <svg id="fsExit" viewBox="0 0 24 24" style="display:none">
+            <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const q = new URLSearchParams(location.search);
+    const videoId = q.get("videoId") || "";
+    const startAt = parseFloat(q.get("start") || "0");
+
+    let player, duration = 0, isPlaying = false, isMuted = false, isFullscreen = false;
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player("youTubePlayer", {
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          mute: 1,
+          enablejsapi: 1,
+          origin: location.origin
+        },
+        events: {
+          onReady: () => {
+            document.title = "ytplayer://onReady";
+            if (videoId) player.loadVideoById(videoId, startAt);
           },
-          events: {
-            onReady: () => {
-              document.title = "ytplayer://onReady";
-              if (videoId) loadVideo(videoId, startAt);
-            },
-            onStateChange: (e) => stateChanged(e.data),
-            onError: (e) =>
-              (document.title = "ytplayer://onError?data=" + e.data),
-          },
-        });
-      }
-
-      function stateChanged(s) {
-        clearInterval(timer);
-        document.title = "ytplayer://onStateChange?data=" + (STATES[s] || "");
-
-        if (s === YT.PlayerState.PLAYING) {
-          if (player.getAdState && player.getAdState()) {
-            document.title = "ytplayer://adStart"; // Ad started
-          } else {
-            document.title = "ytplayer://adEnd";   // Main video
-          }
+          onStateChange: e => handleState(e.data)
         }
-        
-        if (s === 1) {
-          timer = setInterval(() => {
-            try {
-              document.title =
-                "ytplayer://onCurrentTimeChange?data=" +
-                player.getCurrentTime();
-            } catch (e) {}
-          }, 200);
-          try {
-            const d = player.getDuration();
-            if (d > 0)
-              document.title = "ytplayer://onVideoDuration?data=" + d;
-          } catch (e) {}
-        }
-      }
+      });
+    }
 
-      function loadVideo(id, sec) {
-        if (player && player.loadVideoById) {
-          player.loadVideoById(id, sec || 0);
-          document.title = "ytplayer://onVideoId?data=" + id;
-        }
-      }
+    function handleState(state) {
+      isPlaying = state === YT.PlayerState.PLAYING;
+      playIcon.style.display = isPlaying ? "none" : "block";
+      pauseIcon.style.display = isPlaying ? "block" : "none";
 
-      function playVideo() {
-        if (player && player.playVideo) player.playVideo();
-      }
+      document.title = "ytplayer://onStateChange?data=" + state;
+    }
 
-      function pauseVideo() {
-        if (player && player.pauseVideo) player.pauseVideo();
-      }
+    /* ---------- CONTROLS ---------- */
 
-      function seekTo(s) {
-        if (player && player.seekTo) player.seekTo(s, true);
-      }
+    playBtn.onclick = () => {
+      isPlaying ? player.pauseVideo() : player.playVideo();
+      document.title = "ytplayer://onPlayPauseToggle";
+    };
 
-      function mute() {
-        if (player && player.mute) player.mute();
-      }
+    muteBtn.onclick = () => {
+      isMuted = !isMuted;
+      isMuted ? player.mute() : player.unMute();
+      document.title = "ytplayer://onMuteToggle?data=" + isMuted;
+    };
 
-      function unMute() {
-        if (player && player.unMute) player.unMute();
-      }
+    volume.oninput = e => {
+      player.setVolume(+e.target.value);
+      document.title = "ytplayer://onVolumeChange?data=" + e.target.value;
+    };
 
-          
-      function setVolume(volumePercent) {
-          try {
-              if (!player || typeof player.setVolume !== "function") return;
-      
-              let v = Number(volumePercent);
-              if (isNaN(v)) return;
-      
-              // Clamp between 0–100
-              v = Math.max(0, Math.min(100, Math.round(v)));
-      
-              // Apply debounce to prevent flooding YouTube API
-              if (window._volumeDebounceTimer) clearTimeout(window._volumeDebounceTimer);
-      
-              window._volumeDebounceTimer = setTimeout(() => {
-                  try {
-                      player.setVolume(v);
-      
-                      // Mute if volume is 0, else unmute
-                      if (v === 0) {
-                          if (typeof player.mute === "function") player.mute();
-                      } else {
-                          if (typeof player.unMute === "function") player.unMute();
-                      }
-      
-                  } catch (e) {
-                      console.warn("Error applying volume:", e);
-                  }
-              }, 100); // 100ms debounce
-          } catch (e) {
-              console.warn("setVolume error:", e);
-          }
-      }
+    speed.onchange = e => {
+      player.setPlaybackRate(+e.target.value);
+      document.title = "ytplayer://onPlaybackRateChange?data=" + e.target.value;
+    };
 
-      function setPlaybackRate(r) {
-        if (player && player.setPlaybackRate) player.setPlaybackRate(r);
+    seek.oninput = e => {
+      if (duration > 0) {
+        player.seekTo((+e.target.value / 1000) * duration, true);
+        document.title = "ytplayer://onSeek";
       }
-      
-    </script>
-  </body>
+    };
+
+    fsBtn.onclick = () => {
+      isFullscreen = !isFullscreen;
+      fsEnter.style.display = isFullscreen ? "none" : "block";
+      fsExit.style.display = isFullscreen ? "block" : "none";
+
+      document.title =
+        "ytplayer://" +
+        (isFullscreen ? "onFullscreenRequest" : "onFullscreenExitRequest");
+    };
+
+    setInterval(() => {
+      if (!player || !player.getCurrentTime) return;
+      const t = player.getCurrentTime();
+      duration = player.getDuration() || 0;
+
+      seek.value = duration ? (t / duration) * 1000 : 0;
+      time.textContent = format(t) + " / " + format(duration);
+
+      document.title = "ytplayer://onCurrentTimeChange?data=" + t;
+    }, 500);
+
+    function format(s) {
+      s = Math.floor(s);
+      return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    }
+  </script>
+</body>
 </html>
