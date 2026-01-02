@@ -122,45 +122,36 @@
 
           
       function setVolume(volumePercent) {
-      //   try {
-      //     if (!player || typeof player.setVolume !== "function") return;
+          try {
+              if (!player || typeof player.setVolume !== "function") return;
       
-      //     let v = Number(volumePercent);
-      //     if (isNaN(v)) return;
+              let v = Number(volumePercent);
+              if (isNaN(v)) return;
       
-      //     // Clamp 0–100
-      //     v = Math.max(0, Math.min(100, Math.round(v)));
+              // Clamp between 0–100
+              v = Math.max(0, Math.min(100, Math.round(v)));
       
-      //     // If same value as last applied, ignore
-      //     if (v === lastVolume) return;
+              // Apply debounce to prevent flooding YouTube API
+              if (window._volumeDebounceTimer) clearTimeout(window._volumeDebounceTimer);
       
-      //     // Clear any pending debounce
-      //     if (volumeDebounceTimer) {
-      //       clearTimeout(volumeDebounceTimer);
-      //       volumeDebounceTimer = null;
-      //     }
+              window._volumeDebounceTimer = setTimeout(() => {
+                  try {
+                      player.setVolume(v);
       
-      //     // Debounce application — only apply after user stops dragging (~100ms)
-      //     volumeDebounceTimer = setTimeout(() => {
-      //       try {
-      //         lastVolume = v;
-      //         player.setVolume(v);
+                      // Mute if volume is 0, else unmute
+                      if (v === 0) {
+                          if (typeof player.mute === "function") player.mute();
+                      } else {
+                          if (typeof player.unMute === "function") player.unMute();
+                      }
       
-      //         const shouldBeMuted = v === 0;
-      //         if (shouldBeMuted !== lastMuted) {
-      //           lastMuted = shouldBeMuted;
-      //           if (shouldBeMuted && typeof player.mute === "function") player.mute();
-      //           else if (!shouldBeMuted && typeof player.unMute === "function") player.unMute();
-      //         }
-      
-      //       } catch (e) {
-      //         console.warn("Debounced setVolume error", e);
-      //       }
-      //     }, 100); // 100 ms delay — adjust if needed
-      
-      //   } catch (e) {
-      //     console.warn("setVolume error", e);
-      //   }
+                  } catch (e) {
+                      console.warn("Error applying volume:", e);
+                  }
+              }, 100); // 100ms debounce
+          } catch (e) {
+              console.warn("setVolume error:", e);
+          }
       }
 
       function setPlaybackRate(r) {
