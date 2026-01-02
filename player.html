@@ -77,6 +77,15 @@
       function stateChanged(s) {
         clearInterval(timer);
         document.title = "ytplayer://onStateChange?data=" + (STATES[s] || "");
+
+        if (s === YT.PlayerState.PLAYING) {
+          if (player.getAdState && player.getAdState()) {
+            document.title = "ytplayer://adStart"; // Ad started
+          } else {
+            document.title = "ytplayer://adEnd";   // Main video
+          }
+        }
+        
         if (s === 1) {
           timer = setInterval(() => {
             try {
