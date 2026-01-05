@@ -400,11 +400,6 @@
         const thumbnailOverlay = document.getElementById('thumbnailOverlay');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
-        // Get query parameter from URL
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
 
         var videoId=null;
         var durationInitialized = false;
@@ -495,6 +490,7 @@
         // Player state change callback
         function onPlayerStateChange(event) {
             updatePlayPauseIcon();
+            dispatchCallback('onStateChange',event.data);
 
             if (!durationInitialized &&
                 (event.data === YT.PlayerState.CUED ||
@@ -502,6 +498,7 @@
 
                 const d = player.getDuration();
                 if (d && !isNaN(d)) {
+                    dispatchCallback('onVideoDuration', d);
                     durationDisplay.textContent = formatTime(d);
                     durationInitialized = true;
                 }
@@ -558,6 +555,7 @@
             // Update current time
             const currentTime = player.getCurrentTime();
             currentTimeDisplay.textContent = formatTime(currentTime);
+            dispatchCallback('onCurrentTimeChange', currentTime);
             
             // Update time indicator
             timeIndicator.textContent = `${formatTime(currentTime)} / ${formatTime(player.getDuration())}`;
@@ -614,14 +612,64 @@
             }
         }
         
+        function playVideo(){
+            if(player) { 
+                player.playVideo(); 
+                updatePlayPauseIcon();
+            }
+        }
+        function pauseVideo(){
+            if(player) { 
+                player.pauseVideo(); 
+                updatePlayPauseIcon();
+            }
+        }
+
+        function unMute(){
+            if(player) { 
+                player.unMute();
+                muteBtn.querySelector('i').classList.remove('fa-volume-mute');
+                muteBtn.querySelector('i').classList.add('fa-volume-up');
+            }
+        }
+        function mute(){
+            if(player) { 
+                player.mute();
+                muteBtn.querySelector('i').classList.remove('fa-volume-up');
+                muteBtn.querySelector('i').classList.add('fa-volume-mute');
+            }
+        }
+        function setPlaybackRate(r){
+            if(player) {
+                player.setPlaybackRate(r); 
+                speedSelect.value = String(r);
+            }
+        }
+        function setVolume(v){
+            if(!player)return; 
+            v=Math.max(0,Math.min(100,v)); 
+            volumeSlider.value = v; 
+            player.setVolume(v); 
+            if(v===0){
+                mute()
+            }else {
+                unMute()
+            }
+        }
+        function seekTo(s){
+            if(player){
+                player.seekTo(s,true);
+            }
+        }
+
+        
         // Event Listeners
         playPauseBtn.addEventListener('click', function() {
             if (player.getPlayerState() === YT.PlayerState.PLAYING) {
-                player.pauseVideo();
+                pauseVideo();
             } else {
-                player.playVideo();
+                playVideo();
             }
-            updatePlayPauseIcon();
             startControllerTimeout();
         });
         
@@ -631,30 +679,22 @@
         
         muteBtn.addEventListener('click', function() {
             if (player.isMuted()) {
-                player.unMute();
-                muteBtn.querySelector('i').classList.remove('fa-volume-mute');
-                muteBtn.querySelector('i').classList.add('fa-volume-up');
-                
+                unMute();
             } else {
-                player.mute();
-                muteBtn.querySelector('i').classList.remove('fa-volume-up');
-                muteBtn.querySelector('i').classList.add('fa-volume-mute');
+                mute();
             }
             startControllerTimeout();
         });
         
         volumeSlider.addEventListener('input', function() {
             player.setVolume(parseInt(this.value));
+            dispatchCallback('onVolumeChange', this.value)
             
             // Update mute button icon if needed
             if (parseInt(this.value) === 0) {
-                player.mute();
-                muteBtn.querySelector('i').classList.remove('fa-volume-up');
-                muteBtn.querySelector('i').classList.add('fa-volume-mute');
+                mute();
             } else {
-                player.unMute();
-                muteBtn.querySelector('i').classList.remove('fa-volume-mute');
-                muteBtn.querySelector('i').classList.add('fa-volume-up');
+                unMute();
                
             }
             
@@ -774,11 +814,9 @@
                 case 'u':
                     // Unmute with keyboard shortcut
                     if (player.isMuted()) {
-                        player.unMute();
+                        unMute();
                         volumeSlider.value = 80;
                         player.setVolume(80);
-                        muteBtn.querySelector('i').classList.remove('fa-volume-mute');
-                        muteBtn.querySelector('i').classList.add('fa-volume-up');
                        
                     }
                     break;
