@@ -413,9 +413,9 @@ function playVideo(){if(player)player.playVideo(); playPauseBtn.querySelector('i
 function pauseVideo(){if(player)player.pauseVideo(); playPauseBtn.querySelector('i').className='fas fa-play';}
 function mute(){if(player)player.mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}
 function unMute(){if(player)player.unMute(); muteBtn.querySelector('i').className='fas fa-volume-up';}
-function setVolume(v){if(!player)return; v=Math.max(0,Math.min(100,v)); player.setVolume(v); if(v===0)player.mute();else player.unMute();}
+function setVolume(v){if(!player)return; v=Math.max(0,Math.min(100,v)); volumeSlider.value = v; player.setVolume(v); if(v===0){player.mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}else {player.unMute();muteBtn.querySelector('i').className='fas fa-volume-up';}}
 function seekTo(s){if(player)player.seekTo(s,true);}
-function setPlaybackRate(r){if(player)player.setPlaybackRate(r);}
+function setPlaybackRate(r){if(player)player.setPlaybackRate(r); speedSelect.value = r;}
 
 function formatTime(sec){const m=Math.floor(sec/60),s=Math.floor(sec%60);return m+":"+(s<10?"0":"")+s;}
 
@@ -430,7 +430,7 @@ muteBtn.addEventListener('click',()=>{
     else{mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}
     startControllerTimeout();
 });
-volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); startControllerTimeout();});
+volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); const normalizedVolume = (volumeSlider.value / 100).toFixed(2);dispatchCallback('onVolumeChange', normalizedVolume); startControllerTimeout();});
 speedSelect.addEventListener('change',()=>{setPlaybackRate(parseFloat(speedSelect.value)); startControllerTimeout();});
 seekBar.addEventListener('click',e=>{const r=seekBar.getBoundingClientRect();seekTo(player.getDuration()*((e.clientX-r.left)/r.width));});
 
