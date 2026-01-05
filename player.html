@@ -391,12 +391,9 @@ function startCurrentTimeTimer(){
             currentTimeDisplay.textContent=formatTime(t);
             durationDisplay.textContent=formatTime(d);
             progress.style.width=(t/d*100)+'%';
-            console.log(
-        'onCurrentTimeChange =', t,
-        'onVideoDuration =', d
-    );
-            dispatchCallback('onCurrentTimeChange',t);
+            
             dispatchCallback('onVideoDuration',d);
+            dispatchCallback('onCurrentTimeChange',t);
         }
     },200);
 }
