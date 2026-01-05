@@ -357,8 +357,8 @@ function startCurrentTimeTimer(){
             currentTimeDisplay.textContent=formatTime(t);
             durationDisplay.textContent=formatTime(d);
             progress.style.width=(t/d*100)+'%';
-            document.title=`ytplayer://${onCurrentTimeChange}?data=${t}`;
-            dispatchCallback('onVideoDuration',d);
+            document.title=`ytplayer://${'onCurrentTimeChange'}?data=${t}`;
+            document.title=`ytplayer://${'onVideoDuration'}?data=${d}`;  
             
         }
     },200);
