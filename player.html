@@ -247,41 +247,7 @@
                 transform: rotate(360deg);
             }
         }
-
-        .center-button {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 4;
-            cursor: pointer;
-            pointer-events: auto;
-        }
-
-        .play-center-btn {
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 0, 0, 0.7);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .play-center-btn i {
-            font-size: 36px;
-        }
-
-        .unmute-center-btn {
-            width: 180px;
-            height: 180px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 50%;
-            border: 3px solid rgba(255, 255, 255, 0.5);
-            padding: 20px;
-            text-align: center;
-            display: none;
-        }
+        
     </style>
 </head>
 
@@ -355,15 +321,17 @@ const unmuteCenterBtn=document.getElementById('unmuteCenterBtn');
 const cursorTrail=document.getElementById('cursorTrail');
 let currentVideoId=null;
 
+// ytplayer:// callback helper
+function dispatchCallback(name,data){document.title=`ytplayer://${name}?data=${data}`;}
 
 // YouTube API init
 function onYouTubeIframeAPIReady(){
     player=new YT.Player('youTubePlayer',{height:'100%',width:'100%',playerVars:{
         disablekb:1,autoplay:0,controls:0,enablejsapi:1,modestbranding:1,playsinline:1,rel:0,fs:1,iv_load_policy:3
     },events:{
-        onReady:()=>document.title=`ytplayer://${'onReady'}?data=${'true'}`,
+        onReady:()=>dispatchCallback('onReady','true'),
         onStateChange:onPlayerStateChange,
-        onError:e=>document.title=`ytplayer://${'onError'}?data=${e.data}`
+        onError:e=>dispatchCallback('onError',e.data)
     }});
 }
 
@@ -372,7 +340,7 @@ function loadVideo(id,sec=0){
     if(!player)return;
     currentVideoId=id;
     player.loadVideoById(id,sec);
-    document.title=`ytplayer://${'onVideoId'}?data=${id}`;
+    dispatchCallback('onVideoId',id);
     setThumbnailBackground(); startCurrentTimeTimer();
 }
 
@@ -389,14 +357,15 @@ function startCurrentTimeTimer(){
             currentTimeDisplay.textContent=formatTime(t);
             durationDisplay.textContent=formatTime(d);
             progress.style.width=(t/d*100)+'%';
-            document.title=`ytplayer://${'onCurrentTimeChange'}?data=${t}`;
-            document.title=`ytplayer://${'onVideoDuration'}?data=${d}`;
+            document.title=`ytplayer://${onCurrentTimeChange}?data=${t}`;
+            dispatchCallback('onVideoDuration',d);
+            
         }
     },200);
 }
 
 function onPlayerStateChange(e){
-    document.title=`ytplayer://${'onStateChange'}?data=${e.data}`;
+    dispatchCallback('onStateChange',e.data);
     if(e.data===YT.PlayerState.PLAYING){
         thumbnailOverlay.classList.add('hidden'); loadingIndicator.style.display='none';
         playCenterBtn.style.display='none'; if(player.isMuted())showUnmuteButton(); startControllerTimeout();
@@ -428,7 +397,7 @@ muteBtn.addEventListener('click',()=>{
     else{mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}
     startControllerTimeout();
 });
-volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); if(volumeSlider.value===0){player.mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}else {player.unMute();muteBtn.querySelector('i').className='fas fa-volume-up';} document.title=`ytplayer://${'onVolumeChange'}?data=${volumeSlider.value}`;startControllerTimeout();});
+volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); if(volumeSlider.value===0){player.mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}else {player.unMute();muteBtn.querySelector('i').className='fas fa-volume-up';}  dispatchCallback('onVolumeChange', volumeSlider.value); startControllerTimeout();});
 speedSelect.addEventListener('change',()=>{setPlaybackRate(parseFloat(speedSelect.value)); startControllerTimeout();});
 seekBar.addEventListener('click',e=>{const r=seekBar.getBoundingClientRect();seekTo(player.getDuration()*((e.clientX-r.left)/r.width));});
 
