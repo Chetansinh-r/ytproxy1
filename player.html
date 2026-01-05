@@ -8,10 +8,10 @@
 
 <style>
 :root {
-  --control-white: rgba(255,255,255,0.92);
-  --control-dim: rgba(255,255,255,0.65);
-  --control-fade: rgba(255,255,255,0.45);
-  --track-bg: rgba(255,255,255,0.25);
+  --yt-red: #ff0000;
+  --white: rgba(255,255,255,0.95);
+  --dim: rgba(255,255,255,0.65);
+  --track: rgba(255,255,255,0.25);
 }
 
 html, body {
@@ -23,12 +23,20 @@ html, body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
 }
 
+/* -------- Player -------- */
+
+#player-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
 #youTubePlayer {
   width: 100%;
   height: 100%;
 }
 
-/* ---------- Controls Overlay ---------- */
+/* -------- Controls -------- */
 
 .controls {
   position: absolute;
@@ -39,38 +47,39 @@ html, body {
   border-radius: 12px;
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0.65),
-    rgba(0,0,0,0.15),
+    rgba(0,0,0,0.75),
+    rgba(0,0,0,0.2),
     rgba(0,0,0,0)
   );
   opacity: 0;
   transition: opacity .25s ease;
+  pointer-events: auto;
 }
 
-body:hover .controls {
+#player-root:hover .controls {
   opacity: 1;
 }
 
-/* ---------- Seekbar ---------- */
+/* -------- Seekbar -------- */
 
 .seekbar {
   width: 100%;
   height: 3px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   appearance: none;
-  background: var(--track-bg);
+  background: var(--track);
   border-radius: 2px;
 }
 
 .seekbar::-webkit-slider-thumb {
   appearance: none;
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: var(--control-white);
+  background: var(--yt-red);
 }
 
-/* ---------- Control Row ---------- */
+/* -------- Row -------- */
 
 .row {
   display: flex;
@@ -81,18 +90,18 @@ body:hover .controls {
 button {
   background: none;
   border: none;
-  color: var(--control-dim);
-  cursor: pointer;
   padding: 0;
+  cursor: pointer;
+  color: var(--dim);
   transition: color .2s ease, transform .15s ease;
 }
 
 button:hover {
-  color: var(--control-white);
+  color: var(--white);
   transform: scale(1.08);
 }
 
-/* ---------- Icons ---------- */
+/* -------- Icons -------- */
 
 .icon {
   width: 18px;
@@ -100,13 +109,13 @@ button:hover {
   fill: currentColor;
 }
 
-/* ---------- Volume ---------- */
+/* -------- Volume -------- */
 
 .volume {
   width: 70px;
   height: 3px;
   appearance: none;
-  background: var(--track-bg);
+  background: var(--track);
   border-radius: 2px;
 }
 
@@ -115,45 +124,45 @@ button:hover {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: var(--control-white);
+  background: var(--yt-red);
 }
 
-/* ---------- Time ---------- */
+/* -------- Time -------- */
 
 .time {
   font-size: 12px;
   font-weight: 500;
-  color: var(--control-dim);
-  min-width: 92px;
+  color: var(--dim);
+  min-width: 96px;
 }
 
-/* ---------- Speed Menu ---------- */
+/* -------- Speed -------- */
 
-.speed-container {
+.speed {
   position: relative;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .speed-menu {
   position: absolute;
-  bottom: 28px;
+  bottom: 26px;
   right: 0;
-  background: rgba(20,20,20,.9);
+  background: rgba(20,20,20,.95);
   border-radius: 8px;
   padding: 6px 0;
   display: none;
 }
 
 .speed-menu button {
-  display: block;
   padding: 6px 14px;
-  font-size: 13px;
   width: 100%;
   text-align: left;
+  font-size: 13px;
 }
 
 .speed-menu button.active {
-  color: var(--control-white);
-  font-weight: 600;
+  color: var(--white);
 }
 </style>
 
@@ -162,28 +171,30 @@ button:hover {
 
 <body>
 
-<div id="youTubePlayer"></div>
+<div id="player-root">
+  <div id="youTubePlayer"></div>
 
-<div class="controls">
-  <input id="seekBar" class="seekbar" type="range" min="0" max="100" value="0">
+  <div class="controls">
+    <input id="seekBar" class="seekbar" type="range" min="0" max="100" value="0">
 
-  <div class="row">
-    <button id="playBtn"></button>
-    <button id="muteBtn"></button>
-    <input id="volumeBar" class="volume" type="range" min="0" max="100" value="100">
-    <div id="timeLabel" class="time">0:00 / 0:00</div>
+    <div class="row">
+      <button id="playBtn"></button>
+      <button id="muteBtn"></button>
+      <input id="volumeBar" class="volume" type="range" min="0" max="100" value="100">
+      <div id="timeLabel" class="time">0:00 / 0:00</div>
 
-    <div class="speed-container">
-      <button id="speedBtn">1x</button>
-      <div class="speed-menu" id="speedMenu">
-        <button data-rate="0.5">0.5x</button>
-        <button data-rate="1" class="active">1x</button>
-        <button data-rate="1.5">1.5x</button>
-        <button data-rate="2">2x</button>
+      <div class="speed">
+        <button id="speedBtn">1x</button>
+        <div class="speed-menu" id="speedMenu">
+          <button data-rate="0.5">0.5x</button>
+          <button data-rate="1" class="active">1x</button>
+          <button data-rate="1.5">1.5x</button>
+          <button data-rate="2">2x</button>
+        </div>
       </div>
-    </div>
 
-    <button id="fsBtn">⛶</button>
+      <button id="fsBtn">⛶</button>
+    </div>
   </div>
 </div>
 
@@ -192,15 +203,29 @@ const q = new URLSearchParams(location.search);
 const videoId = q.get("videoId") || "";
 const startAt = parseFloat(q.get("start") || "0");
 
-let player, timer;
-let duration = 0;
-let isPlaying = false;
-let isMuted = false;
+let player, timer, duration = 0;
+let isPlaying = false, isMuted = false;
 
-/* ---------- YouTube ---------- */
+/* -------- Icons -------- */
+
+const ICONS = {
+  play: `<svg class="icon" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>`,
+  pause: `<svg class="icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
+  volume: `<svg class="icon" viewBox="0 0 24 24"><polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/></svg>`,
+  mute: `<svg class="icon" viewBox="0 0 24 24"><polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/><line x1="16" y1="8" x2="22" y2="16" stroke="white" stroke-width="2"/><line x1="22" y1="8" x2="16" y2="16" stroke="white" stroke-width="2"/></svg>`
+};
+
+function updateIcons() {
+  playBtn.innerHTML = isPlaying ? ICONS.pause : ICONS.play;
+  muteBtn.innerHTML = isMuted ? ICONS.mute : ICONS.volume;
+}
+
+/* -------- YouTube -------- */
 
 function onYouTubeIframeAPIReady() {
   player = new YT.Player("youTubePlayer", {
+    width: "100%",
+    height: "100%",
     playerVars: {
       autoplay: 1,
       controls: 0,
@@ -209,62 +234,53 @@ function onYouTubeIframeAPIReady() {
       origin: location.origin
     },
     events: {
-      onReady: () => videoId && loadVideo(videoId, startAt),
-      onStateChange: e => stateChanged(e.data)
+      onReady: () => videoId && player.loadVideoById(videoId, startAt),
+      onStateChange: e => onState(e.data)
     }
   });
 }
 
-function stateChanged(s) {
+function onState(s) {
   clearInterval(timer);
   isPlaying = s === 1;
-  updatePlayIcon();
+  updateIcons();
 
   if (isPlaying) {
-    timer = setInterval(updateTime, 250);
     duration = player.getDuration() || 0;
+    timer = setInterval(updateTime, 250);
   }
 }
 
 function updateTime() {
   const t = player.getCurrentTime();
   seekBar.value = duration ? (t / duration) * 100 : 0;
-  timeLabel.textContent = format(t) + " / " + format(duration);
+  timeLabel.textContent = fmt(t) + " / " + fmt(duration);
 }
 
-function format(s) {
+const fmt = s => {
   const m = Math.floor(s / 60);
   const r = Math.floor(s % 60);
   return m + ":" + (r < 10 ? "0" : "") + r;
-}
+};
 
-/* ---------- API (unchanged) ---------- */
+/* -------- API (unchanged) -------- */
 
-function loadVideo(id, sec) { player.loadVideoById(id, sec || 0); }
 function playVideo() { player.playVideo(); }
 function pauseVideo() { player.pauseVideo(); }
 function mute() { player.mute(); }
 function unMute() { player.unMute(); }
-function setVolume(v) { player.setVolume(v); v == 0 ? mute() : unMute(); }
 function seekTo(s) { player.seekTo(s, true); }
+function setVolume(v) { player.setVolume(v); v == 0 ? mute() : unMute(); }
 function setPlaybackRate(r) { player.setPlaybackRate(r); }
 
-/* ---------- UI Bindings ---------- */
-
-function updatePlayIcon() {
-  playBtn.innerHTML = isPlaying ? "❚❚" : "▶";
-}
-
-function updateMuteIcon() {
-  muteBtn.innerHTML = isMuted ? "🔇" : "🔊";
-}
+/* -------- UI -------- */
 
 playBtn.onclick = () => isPlaying ? pauseVideo() : playVideo();
 
 muteBtn.onclick = () => {
   isMuted = !isMuted;
   isMuted ? mute() : unMute();
-  updateMuteIcon();
+  updateIcons();
 };
 
 volumeBar.oninput = e => setVolume(e.target.value);
@@ -272,27 +288,24 @@ volumeBar.oninput = e => setVolume(e.target.value);
 seekBar.oninput = e =>
   duration && seekTo((e.target.value / 100) * duration);
 
-/* ---------- Speed ---------- */
-
 speedBtn.onclick = () =>
   speedMenu.style.display =
     speedMenu.style.display === "block" ? "none" : "block";
 
-speedMenu.querySelectorAll("button").forEach(btn => {
-  btn.onclick = () => {
-    setPlaybackRate(btn.dataset.rate);
-    speedBtn.textContent = btn.dataset.rate + "x";
+speedMenu.querySelectorAll("button").forEach(b => {
+  b.onclick = () => {
+    setPlaybackRate(b.dataset.rate);
+    speedBtn.textContent = b.dataset.rate + "x";
     speedMenu.style.display = "none";
-    speedMenu.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
+    speedMenu.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
   };
 });
 
 fsBtn.onclick = () =>
   document.title = "ytplayer://onFullscreenToggle";
 
-updatePlayIcon();
-updateMuteIcon();
+updateIcons();
 </script>
 
 </body>
