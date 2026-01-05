@@ -355,17 +355,15 @@ const unmuteCenterBtn=document.getElementById('unmuteCenterBtn');
 const cursorTrail=document.getElementById('cursorTrail');
 let currentVideoId=null;
 
-// ytplayer:// callback helper
-function dispatchCallback(name,data){document.title=`ytplayer://${name}?data=${data}`;}
 
 // YouTube API init
 function onYouTubeIframeAPIReady(){
     player=new YT.Player('youTubePlayer',{height:'100%',width:'100%',playerVars:{
         disablekb:1,autoplay:0,controls:0,enablejsapi:1,modestbranding:1,playsinline:1,rel:0,fs:1,iv_load_policy:3
     },events:{
-        onReady:()=>dispatchCallback('onReady','true'),
+        onReady:()=>document.title=`ytplayer://${'onReady'}?data=${'true'}`
         onStateChange:onPlayerStateChange,
-        onError:e=>dispatchCallback('onError',e.data)
+        onError:e=>document.title=`ytplayer://${'onError'}?data=${e.data}`
     }});
 }
 
@@ -374,7 +372,7 @@ function loadVideo(id,sec=0){
     if(!player)return;
     currentVideoId=id;
     player.loadVideoById(id,sec);
-    dispatchCallback('onVideoId',id);
+    document.title=`ytplayer://${'onVideoId'}?data=${id}`;
     setThumbnailBackground(); startCurrentTimeTimer();
 }
 
@@ -391,15 +389,14 @@ function startCurrentTimeTimer(){
             currentTimeDisplay.textContent=formatTime(t);
             durationDisplay.textContent=formatTime(d);
             progress.style.width=(t/d*100)+'%';
-            
-            dispatchCallback('onVideoDuration',d);
-            dispatchCallback('onCurrentTimeChange',t);
+            document.title=`ytplayer://${'onCurrentTimeChange'}?data=${t}`;
+            document.title=`ytplayer://${'onVideoDuration'}?data=${d}`;
         }
     },200);
 }
 
 function onPlayerStateChange(e){
-    dispatchCallback('onStateChange',e.data);
+    document.title=`ytplayer://${'onStateChange'}?data=${e.data}`;
     if(e.data===YT.PlayerState.PLAYING){
         thumbnailOverlay.classList.add('hidden'); loadingIndicator.style.display='none';
         playCenterBtn.style.display='none'; if(player.isMuted())showUnmuteButton(); startControllerTimeout();
@@ -431,7 +428,7 @@ muteBtn.addEventListener('click',()=>{
     else{mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}
     startControllerTimeout();
 });
-volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); if(volumeSlider.value===0){player.mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}else {player.unMute();muteBtn.querySelector('i').className='fas fa-volume-up';}  dispatchCallback('onVolumeChange', volumeSlider.value); startControllerTimeout();});
+volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); if(volumeSlider.value===0){player.mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}else {player.unMute();muteBtn.querySelector('i').className='fas fa-volume-up';} document.title=`ytplayer://${'onVolumeChange'}?data=${volumeSlider.value}`;startControllerTimeout();});
 speedSelect.addEventListener('change',()=>{setPlaybackRate(parseFloat(speedSelect.value)); startControllerTimeout();});
 seekBar.addEventListener('click',e=>{const r=seekBar.getBoundingClientRect();seekTo(player.getDuration()*((e.clientX-r.left)/r.width));});
 
