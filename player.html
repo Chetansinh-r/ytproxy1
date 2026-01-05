@@ -320,6 +320,8 @@ const playCenterBtn=document.getElementById('playCenterBtn');
 const unmuteCenterBtn=document.getElementById('unmuteCenterBtn');
 const cursorTrail=document.getElementById('cursorTrail');
 let currentVideoId=null;
+let currentTimeTimer = null;
+let durationSent = false;
 
 // ytplayer:// callback helper
 function dispatchCallback(name,data){document.title=`ytplayer://${name}?data=${data}`;}
@@ -339,6 +341,7 @@ function onYouTubeIframeAPIReady(){
 function loadVideo(id,sec=0){
     if(!player)return;
     currentVideoId=id;
+    durationSent = false;
     player.loadVideoById(id,sec);
     dispatchCallback('onVideoId',id);
     setThumbnailBackground(); startCurrentTimeTimer();
@@ -350,24 +353,37 @@ function setThumbnailBackground(){
 
 function startCurrentTimeTimer(){
     clearInterval(currentTimeTimer);
-    if(player.getPlayerState()===YT.PlayerState.PLAYING){
-        currentTimeTimer = setInterval(() => {
-            try {
-                        const t=player.getCurrentTime();
-                        currentTimeDisplay.textContent=formatTime(t);
-                        document.title=`ytplayer://${'onCurrentTimeChange'}?data=${t}`;
-                      
-                    } catch (e) {}
-                }, 200);
+    currentTimeTimer=setInterval(() => {
         try {
-                    const d = player.getDuration();
-                    durationDisplay.textContent=formatTime(d);
-                    if (d > 0)
-                      document.title = "ytplayer://onVideoDuration?data=" + d;
-                  } catch (e) {}
-                  
-                    
-    }
+            if (!player || player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                return;
+            }
+
+            // ---- Current time (high frequency) ----
+            const t = player.getCurrentTime();
+            currentTimeDisplay.textContent = formatTime(t);
+            document.title = `ytplayer://onCurrentTimeChange?data=${t}`;
+
+            // ---- Duration (low frequency, once) ----
+            if (!durationSent) {
+                const d = player.getDuration();
+                if (d > 0) {
+                    durationDisplay.textContent = formatTime(d);
+                    document.title = `ytplayer://onVideoDuration?data=${d}`;
+                    durationSent = true;
+                }
+            }
+
+            // ---- Progress (safe) ----
+            const d2 = player.getDuration();
+            if (d2 > 0) {
+                progress.style.width = (t / d2 * 100) + '%';
+            }
+
+        } catch (e) {
+            // swallow – YouTube throws during buffering
+        }
+    }, 200);
 }
 
 function onPlayerStateChange(e){
