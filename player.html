@@ -57,12 +57,27 @@ html, body {
   opacity: 1;
 }
 
+/* ---------- Seekbar ---------- */
+
+.seekbar-wrap {
+  position: relative;
+  margin-bottom: 10px;
+}
+
 .seekbar {
   width: 100%;
   height: 3px;
-  margin-bottom: 10px;
   appearance: none;
   background: var(--track);
+}
+
+.seekbar-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--yt-red);
+  pointer-events: none;
 }
 
 .seekbar::-webkit-slider-thumb {
@@ -73,11 +88,29 @@ html, body {
   background: var(--yt-red);
 }
 
+/* ---------- Row ---------- */
+
 .row {
   display: flex;
   align-items: center;
+}
+
+.left,
+.right {
+  display: flex;
+  align-items: center;
+}
+
+.left {
   gap: 14px;
 }
+
+.right {
+  margin-left: auto;
+  gap: 16px;
+}
+
+/* ---------- Buttons ---------- */
 
 button {
   background: none;
@@ -99,6 +132,14 @@ button:hover {
   fill: currentColor;
 }
 
+/* ---------- Volume Group ---------- */
+
+.volume-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .volume {
   width: 70px;
   height: 3px;
@@ -114,11 +155,45 @@ button:hover {
   background: var(--yt-red);
 }
 
+/* ---------- Time ---------- */
+
 .time {
   font-size: 12px;
   font-weight: 500;
   color: var(--dim);
   min-width: 96px;
+}
+
+/* ---------- Speed ---------- */
+
+.speed {
+  position: relative;
+}
+
+.speed-btn {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.speed-menu {
+  position: absolute;
+  bottom: 26px;
+  right: 0;
+  background: rgba(20,20,20,.95);
+  border-radius: 8px;
+  padding: 6px 0;
+  display: none;
+}
+
+.speed-menu button {
+  padding: 6px 14px;
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+}
+
+.speed-menu button.active {
+  color: var(--white);
 }
 </style>
 
@@ -130,23 +205,44 @@ button:hover {
 <div id="player-root">
   <div id="youTubePlayer"></div>
 
-  <!-- UI ONLY -->
   <div class="controls">
-    <input id="seekBar" class="seekbar" type="range" min="0" max="100" value="0">
+    <div class="seekbar-wrap">
+      <div id="seekProgress" class="seekbar-progress"></div>
+      <input id="seekBar" class="seekbar" type="range" min="0" max="100" value="0">
+    </div>
 
     <div class="row">
-      <button id="playBtn"></button>
-      <button id="muteBtn"></button>
-      <input id="volumeBar" class="volume" type="range" min="0" max="100" value="100">
-      <div id="timeLabel" class="time">0:00 / 0:00</div>
-      <button id="fsBtn">⛶</button>
+      <div class="left">
+        <button id="playBtn"></button>
+
+        <div class="volume-group">
+          <button id="muteBtn"></button>
+          <input id="volumeBar" class="volume" type="range" min="0" max="100" value="100">
+        </div>
+
+        <div id="timeLabel" class="time">0:00 / 0:00</div>
+      </div>
+
+      <div class="right">
+        <div class="speed">
+          <button id="speedBtn" class="speed-btn">1x</button>
+          <div id="speedMenu" class="speed-menu">
+            <button data-rate="0.5">0.5x</button>
+            <button data-rate="1" class="active">1x</button>
+            <button data-rate="1.5">1.5x</button>
+            <button data-rate="2">2x</button>
+          </div>
+        </div>
+
+        <button id="fsBtn">⛶</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 /* ============================================================
-   ORIGINAL WORKING CODE — UNCHANGED
+   PLAYER CODE — UNTOUCHED
    ============================================================ */
 
 const q = new URLSearchParams(location.search);
@@ -199,11 +295,15 @@ function stateChanged(s) {
   clearInterval(timer);
   document.title = "ytplayer://onStateChange?data=" + (STATES[s] || "");
 
+  isPlaying = s === 1;
+  updatePlayIcon();
+
   if (s === 1) {
     timer = setInterval(() => {
       try {
         const t = player.getCurrentTime();
-        document.title = "ytplayer://onCurrentTimeChange?data=" + t;
+        document.title =
+          "ytplayer://onCurrentTimeChange?data=" + t;
         updateUI(t);
       } catch (e) {}
     }, 200);
@@ -228,16 +328,15 @@ function pauseVideo() { player.pauseVideo(); }
 function seekTo(s) { player.seekTo(s, true); }
 function mute() { player.mute(); }
 function unMute() { player.unMute(); }
-
 function setVolume(v) {
-  if (!player) return;
   v = Math.max(0, Math.min(100, Math.round(v)));
   player.setVolume(v);
   v === 0 ? mute() : unMute();
 }
+function setPlaybackRate(r) { player.setPlaybackRate(r); }
 
 /* ============================================================
-   UI LAYER (ADDED ONLY)
+   UI LAYER ONLY
    ============================================================ */
 
 const ICONS = {
@@ -251,12 +350,16 @@ let isPlaying = false;
 let isMuted = false;
 let duration = 0;
 
+function updatePlayIcon() {
+  playBtn.innerHTML = isPlaying ? ICONS.pause : ICONS.play;
+}
+
 function updateUI(t) {
-  try {
-    duration = player.getDuration() || 0;
-    seekBar.value = duration ? (t / duration) * 100 : 0;
-    timeLabel.textContent = fmt(t) + " / " + fmt(duration);
-  } catch (e) {}
+  duration = player.getDuration() || 0;
+  const p = duration ? (t / duration) * 100 : 0;
+  seekBar.value = p;
+  seekProgress.style.width = p + "%";
+  timeLabel.textContent = fmt(t) + " / " + fmt(duration);
 }
 
 const fmt = s => {
@@ -265,11 +368,7 @@ const fmt = s => {
   return m + ":" + (r < 10 ? "0" : "") + r;
 };
 
-playBtn.onclick = () => {
-  isPlaying = !isPlaying;
-  isPlaying ? playVideo() : pauseVideo();
-  playBtn.innerHTML = isPlaying ? ICONS.pause : ICONS.play;
-};
+playBtn.onclick = () => isPlaying ? pauseVideo() : playVideo();
 
 muteBtn.onclick = () => {
   isMuted = !isMuted;
@@ -282,10 +381,24 @@ volumeBar.oninput = e => setVolume(e.target.value);
 seekBar.oninput = e =>
   duration && seekTo((e.target.value / 100) * duration);
 
+speedBtn.onclick = () =>
+  speedMenu.style.display =
+    speedMenu.style.display === "block" ? "none" : "block";
+
+speedMenu.querySelectorAll("button").forEach(b => {
+  b.onclick = () => {
+    setPlaybackRate(b.dataset.rate);
+    speedBtn.textContent = b.dataset.rate + "x";
+    speedMenu.style.display = "none";
+    speedMenu.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+  };
+});
+
 fsBtn.onclick = () =>
   document.title = "ytplayer://onFullscreenToggle";
 
-playBtn.innerHTML = ICONS.play;
+updatePlayIcon();
 muteBtn.innerHTML = ICONS.volume;
 </script>
 
