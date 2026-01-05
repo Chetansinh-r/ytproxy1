@@ -67,8 +67,14 @@ html, body {
   height: 3px;
   margin-bottom: 10px;
   appearance: none;
-  background: var(--track);
   border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--yt-red) 0%,
+    var(--yt-red) var(--progress, 0%),
+    var(--track) var(--progress, 0%),
+    var(--track) 100%
+  );
 }
 
 .seekbar::-webkit-slider-thumb {
@@ -115,8 +121,14 @@ button:hover {
   width: 70px;
   height: 3px;
   appearance: none;
-  background: var(--track);
   border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--yt-red) 0%,
+    var(--yt-red) var(--volume, 100%),
+    var(--track) var(--volume, 100%),
+    var(--track) 100%
+  );
 }
 
 .volume::-webkit-slider-thumb {
@@ -204,7 +216,7 @@ const videoId = q.get("videoId") || "";
 const startAt = parseFloat(q.get("start") || "0");
 
 let player, timer, duration = 0;
-let isPlaying = false, isMuted = false;
+let isPlaying = false, isMuted = true;
 
 /* -------- Icons -------- */
 
@@ -212,7 +224,12 @@ const ICONS = {
   play: `<svg class="icon" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>`,
   pause: `<svg class="icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
   volume: `<svg class="icon" viewBox="0 0 24 24"><polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/></svg>`,
-  mute: `<svg class="icon" viewBox="0 0 24 24"><polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/><line x1="16" y1="8" x2="22" y2="16" stroke="white" stroke-width="2"/><line x1="22" y1="8" x2="16" y2="16" stroke="white" stroke-width="2"/></svg>`
+  mute: `
+  <svg class="icon" viewBox="0 0 24 24">
+    <polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/>
+    <line x1="16" y1="8" x2="22" y2="16" stroke="currentColor" stroke-width="2"/>
+    <line x1="22" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2"/>
+  </svg>`
 };
 
 function updateIcons() {
@@ -229,20 +246,23 @@ function onYouTubeIframeAPIReady() {
     playerVars: {
       autoplay: 1,
       controls: 0,
-      cc_load_policy: 0,
       fs: 1,
-      iv_load_policy: 3,
       rel: 0,
-      enablejsapi: 1,
       mute: 1,
       playsinline: 1,
-     /* origin: location.origin, */
       modestbranding: 1,
-      disablekb: 1,
-      showinfo: 0,
+      disablekb: 1
     },
     events: {
-      onReady: () => videoId && player.loadVideoById(videoId, startAt),
+      onReady: () => {
+        if (!videoId) return;
+        player.mute();
+        updateIcons();
+        player.loadVideoById({
+          videoId: videoId,
+          startSeconds: startAt
+        });
+      },
       onStateChange: e => onState(e.data)
     }
   });
@@ -261,7 +281,9 @@ function onState(s) {
 
 function updateTime() {
   const t = player.getCurrentTime();
-  seekBar.value = duration ? (t / duration) * 100 : 0;
+  const p = duration ? (t / duration) * 100 : 0;
+  seekBar.value = p;
+  seekBar.style.setProperty("--progress", p + "%");
   timeLabel.textContent = fmt(t) + " / " + fmt(duration);
 }
 
@@ -278,7 +300,11 @@ function pauseVideo() { player.pauseVideo(); }
 function mute() { player.mute(); }
 function unMute() { player.unMute(); }
 function seekTo(s) { player.seekTo(s, true); }
-function setVolume(v) { player.setVolume(v); v == 0 ? mute() : unMute(); }
+function setVolume(v) {
+  player.setVolume(v);
+  volumeBar.style.setProperty("--volume", v + "%");
+  v == 0 ? mute() : unMute();
+}
 function setPlaybackRate(r) { player.setPlaybackRate(r); }
 
 /* -------- UI -------- */
