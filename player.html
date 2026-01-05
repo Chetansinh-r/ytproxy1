@@ -316,11 +316,8 @@ const progress=document.getElementById('progress');
 const controllerOverlay=document.getElementById('controllerOverlay');
 const thumbnailOverlay=document.getElementById('thumbnailOverlay');
 const loadingIndicator=document.getElementById('loadingIndicator');
-const playCenterBtn=document.getElementById('playCenterBtn');
-const unmuteCenterBtn=document.getElementById('unmuteCenterBtn');
 const cursorTrail=document.getElementById('cursorTrail');
 let currentVideoId=null;
-let currentTimeTimer = null;
 let durationSent = false;
 
 // ytplayer:// callback helper
@@ -389,14 +386,11 @@ function startCurrentTimeTimer(){
 function onPlayerStateChange(e){
     dispatchCallback('onStateChange',e.data);
     if(e.data===YT.PlayerState.PLAYING){
-        thumbnailOverlay.classList.add('hidden'); loadingIndicator.style.display='none';
-        playCenterBtn.style.display='none'; if(player.isMuted())showUnmuteButton(); startControllerTimeout();
+        thumbnailOverlay.classList.add('hidden'); loadingIndicator.style.display='none'; startControllerTimeout();
     } else if(e.data===YT.PlayerState.PAUSED){
-        thumbnailOverlay.classList.remove('hidden'); playCenterBtn.style.display='flex'; startControllerTimeout();
+        thumbnailOverlay.classList.remove('hidden');  startControllerTimeout();
     }
 }
-function showUnmuteButton(){unmuteCenterBtn.style.display='flex'; setTimeout(()=>{unmuteCenterBtn.style.opacity='1';},100);}
-function hideUnmuteButton(){unmuteCenterBtn.style.opacity='0'; setTimeout(()=>{unmuteCenterBtn.style.display='none';},300);}
 
 function playVideo(){if(player)player.playVideo(); playPauseBtn.querySelector('i').className='fas fa-pause';}
 function pauseVideo(){if(player)player.pauseVideo(); playPauseBtn.querySelector('i').className='fas fa-play';}
@@ -415,7 +409,7 @@ playPauseBtn.addEventListener('click',()=>{
     startControllerTimeout();
 });
 muteBtn.addEventListener('click',()=>{
-    if(player.isMuted()){unMute(); muteBtn.querySelector('i').className='fas fa-volume-up'; hideUnmuteButton();}
+    if(player.isMuted()){unMute(); muteBtn.querySelector('i').className='fas fa-volume-up';}
     else{mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}
     startControllerTimeout();
 });
