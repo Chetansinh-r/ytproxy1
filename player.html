@@ -1,31 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="referrer" content="strict-origin-when-cross-origin" />
-    <style>
-      html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background: #000;
-        overflow: hidden;
-      }
-      #youTubePlayer {
-        width: 100%;
-        height: 100%;
-      }
-    </style>
-    <script src="https://www.youtube.com/iframe_api" async></script>
-  </head>
-  <body>
-    <div id="youTubePlayer"></div>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>Enhanced YouTube Player</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://www.youtube.com/iframe_api" async></script>
+<style>
+  /* --- Enhanced UI CSS from second HTML --- */
+  * {margin:0; padding:0; box-sizing:border-box;}
+  body {background:#000; color:white; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; height:100vh; overflow:hidden;}
+  #player-container {position:fixed; top:0; left:0; width:100%; height:100%; z-index:1;}
+  #youTubePlayer {width:100%; height:100%; display:block; pointer-events:none;}
+  .video-overlay {position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; pointer-events:none;}
+  .controller-overlay {position:fixed; bottom:0; left:0; width:100%; background:rgba(0,0,0,0.7); padding:15px; z-index:10; transition:opacity 0.3s; opacity:1;}
+  .controller-overlay.hidden {opacity:0;}
+  .progress-container {display:flex; align-items:center; gap:10px; margin-bottom:15px;}
+  .time-display {font-size:14px; font-variant-numeric:tabular-nums; min-width:40px; text-align:center;}
+  .seek-bar {flex:1; height:6px; background:#444; border-radius:3px; position:relative; cursor:pointer;}
+  .progress {height:100%; background:#f00; border-radius:3px; width:0%; position:relative;}
+  .progress::after {content:''; position:absolute; right:-5px; top:50%; transform:translateY(-50%); width:12px; height:12px; background:#fff; border-radius:50%; opacity:0; transition:opacity 0.2s;}
+  .seek-bar:hover .progress::after {opacity:1;}
+  .controls {display:flex; justify-content:space-between; align-items:center;}
+  .left-controls, .right-controls {display:flex; align-items:center; gap:15px;}
+  .control-btn {background:transparent; border:none; color:white; font-size:18px; cursor:pointer; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:background 0.2s; pointer-events:auto;}
+  .control-btn:hover {background:rgba(255,255,255,0.1);}
+  .volume-container {display:flex; align-items:center; gap:8px;}
+  .volume-slider {width:80px; -webkit-appearance:none; height:4px; border-radius:2px; background:#555; outline:none; transition:all 0.2s; opacity:0.7; pointer-events:auto;}
+  .volume-slider:hover {opacity:1;}
+  .volume-slider::-webkit-slider-thumb {-webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#fff; cursor:pointer;}
+  .playback-speed {display:flex; align-items:center; gap:8px;}
+  select {background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(255,255,255,0.2); padding:6px 10px; border-radius:4px; cursor:pointer; pointer-events:auto;}
+  .video-title {position:absolute; top:20px; left:20px; font-size:18px; background:rgba(0,0,0,0.5); padding:8px 15px; border-radius:4px; max-width:80%; z-index:5; pointer-events:none; transition:opacity 0.3s; opacity:1;}
+  .video-title.hidden {opacity:0;}
+  .cursor-trail {position:fixed; width:20px; height:20px; background:rgba(255,255,255,0.5); border-radius:50%; pointer-events:none; transform:translate(-50%,-50%); z-index:9999; transition:opacity 0.3s; opacity:0;}
+  .cursor-trail.visible {opacity:1;}
+  .thumbnail-overlay {position:absolute; top:0; left:0; width:100%; height:100%; z-index:3; background-color:#000; background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; transition:opacity 0.3s; opacity:1; pointer-events:none;}
+  .thumbnail-overlay.hidden {opacity:0; pointer-events:none;}
+  .loading-indicator {position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:4; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:15px;}
+  .spinner {width:50px; height:50px; border:5px solid rgba(255,255,255,0.3); border-radius:50%; border-top:5px solid #fff; animation:spin 1s linear infinite;}
+  @keyframes spin {0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);}}
+  .loading-text {font-size:18px; color:white; text-shadow:0 0 5px rgba(0,0,0,0.8);}
+  .center-button {position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:4; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:transform 0.2s, opacity 0.2s; pointer-events:auto; text-align:center;}
+  .play-center-btn {width:200px; height:200px; background:rgba(255,0,0,0.7); border-radius:50%; z-index:4; opacity:0.9;}
+  .play-center-btn:hover {transform:translate(-50%,-50%) scale(1.1); opacity:1; background:rgba(255,0,0,0.9);}
+  .unmute-center-btn {width:180px; height:180px; background:rgba(0,0,0,0.7); border-radius:50%; border:3px solid rgba(255,255,255,0.5); padding:20px; opacity:0.9;}
+  .unmute-center-btn:hover {transform:translate(-50%,-50%) scale(1.05); opacity:1; background:rgba(0,0,0,0.8);}
+  .unmute-icon {font-size:60px; color:white; margin-bottom:15px;}
+  .unmute-text {font-size:18px; font-weight:bold; color:white; text-transform:uppercase; letter-spacing:1px;}
+  .thumbnail-overlay .center-button {opacity:0; transition:opacity 0.3s;}
+  .thumbnail-overlay:hover .center-button {opacity:1;}
+  .thumbnail-overlay.hidden .center-button {display:none;}
+  @media (max-width:768px) {
+    .controller-overlay {padding:10px;}
+    .control-btn {width:32px; height:32px; font-size:16px;}
+    .volume-slider {width:60px;}
+    .video-title {font-size:14px; top:10px; left:10px;}
+    .play-center-btn {width:200px; height:200px;}
+    .play-center-btn i {font-size:24px;}
+    .unmute-center-btn {width:140px; height:140px;}
+    .unmute-icon {font-size:40px;}
+    .unmute-text {font-size:14px;}
+    .spinner {width:40px; height:40px; border-width:4px;}
+    .loading-text {font-size:16px;}
+  }
+</style>
+</head>
+<body>
 
-    <script>
-      const q = new URLSearchParams(location.search);
+<div id="player-container">
+  <div id="youTubePlayer"></div>
+  <div class="cursor-trail" id="cursorTrail"></div>
+  <div class="video-overlay" id="videoOverlay"></div>
+  <div class="thumbnail-overlay" id="thumbnailOverlay"></div>
+  <div class="loading-indicator" id="loadingIndicator">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading Video...</div>
+  </div>
+  <div class="center-button play-center-btn" id="playCenterBtn"><i class="fas fa-play"></i></div>
+  <div class="center-button unmute-center-btn" id="unmuteCenterBtn">
+    <div class="unmute-icon"><i class="fas fa-volume-mute"></i></div>
+    <div class="unmute-text">Click to Unmute</div>
+  </div>
+  <div class="video-title" id="videoTitle" hidden>Video Title Here</div>
+</div>
+
+<div class="controller-overlay" id="controllerOverlay">
+  <div class="progress-container">
+    <div class="time-display" id="currentTime">0:00</div>
+    <div class="seek-bar" id="seekBar"><div class="progress" id="progress"></div></div>
+    <div class="time-display" id="duration">0:00</div>
+  </div>
+  <div class="controls">
+    <div class="left-controls">
+      <button class="control-btn" id="playPauseBtn"><i class="fas fa-play"></i></button>
+      <button class="control-btn" id="muteBtn"><i class="fas fa-volume-up"></i></button>
+      <div class="volume-container"><input type="range" min="0" max="100" value="80" class="volume-slider" id="volumeSlider"></div>
+      <div class="time-display" id="timeIndicator">0:00 / 0:00</div>
+    </div>
+    <div class="right-controls">
+      <div class="playback-speed">
+        <select id="speedSelect">
+          <option value="0.25">0.25x</option>
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="1.75">1.75x</option>
+          <option value="2">2x</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const q = new URLSearchParams(location.search);
       const videoId = q.get("videoId") || "";
       const startAt = parseFloat(q.get("start") || "0");
 
@@ -157,7 +248,53 @@
       function setPlaybackRate(r) {
         if (player && player.setPlaybackRate) player.setPlaybackRate(r);
       }
-      
-    </script>
-  </body>
+
+/* --- Wire enhanced UI controls to original functions --- */
+const playPauseBtn = document.getElementById('playPauseBtn');
+const muteBtn = document.getElementById('muteBtn');
+const volumeSlider = document.getElementById('volumeSlider');
+const speedSelect = document.getElementById('speedSelect');
+const seekBar = document.getElementById('seekBar');
+const progress = document.getElementById('progress');
+const controllerOverlayEl = document.getElementById('controllerOverlay');
+const cursorTrail = document.getElementById('cursorTrail');
+let isSeeking = false;
+let overlayTimeout;
+
+playPauseBtn.addEventListener('click', () => {
+  if (player.getPlayerState() === YT.PlayerState.PLAYING) pauseVideo();
+  else playVideo();
+});
+
+muteBtn.addEventListener('click', () => {
+  if (player.isMuted()) unMute();
+  else mute();
+});
+
+volumeSlider.addEventListener('input', () => { setVolume(parseInt(volumeSlider.value)); });
+speedSelect.addEventListener('change', () => { setPlaybackRate(parseFloat(speedSelect.value)); });
+
+seekBar.addEventListener('mousedown', (e) => { isSeeking = true; handleSeek(e); });
+document.addEventListener('mousemove', (e) => { if (isSeeking) handleSeek(e); });
+document.addEventListener('mouseup', () => { isSeeking = false; });
+seekBar.addEventListener('click', (e) => { if (!isSeeking) handleSeek(e); });
+
+function handleSeek(e) {
+  const rect = seekBar.getBoundingClientRect();
+  const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  seekTo(player.getDuration() * percent);
+  progress.style.width = `${percent*100}%`;
+}
+
+document.addEventListener('mousemove', (e) => {
+  cursorTrail.style.left = e.clientX+'px';
+  cursorTrail.style.top = e.clientY+'px';
+  cursorTrail.classList.add('visible');
+  controllerOverlayEl.classList.remove('hidden');
+  clearTimeout(overlayTimeout);
+  overlayTimeout = setTimeout(() => { controllerOverlayEl.classList.add('hidden'); cursorTrail.classList.remove('visible'); }, 3000);
+});
+</script>
+
+</body>
 </html>
