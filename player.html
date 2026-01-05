@@ -11,7 +11,12 @@
   * {margin:0; padding:0; box-sizing:border-box;}
   body {background:#000; color:white; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; height:100vh; overflow:hidden;}
   #player-container {position:fixed; top:0; left:0; width:100%; height:100%; z-index:1;}
-  #youTubePlayer {width:100%; height:100%; display:block; pointer-events:none;}
+  #youTubePlayer {width:100%; 
+  height:100%; 
+  display:block; 
+  z-index:1; /* make sure it’s behind overlays */
+  pointer-events:auto; /* allow video rendering */
+  background:#000;}
   .video-overlay {position:absolute; top:0; left:0; width:100%; height:100%; z-index:2; pointer-events:none;}
   .controller-overlay {position:fixed; bottom:0; left:0; width:100%; background:rgba(0,0,0,0.7); padding:15px; z-index:10; transition:opacity 0.3s; opacity:1;}
   .controller-overlay.hidden {opacity:0;}
@@ -168,6 +173,11 @@ const q = new URLSearchParams(location.search);
       function stateChanged(s) {
         clearInterval(timer);
         document.title = "ytplayer://onStateChange?data=" + (STATES[s] || "");
+        // Hide thumbnail when playing
+  const thumbnailOverlay = document.getElementById('thumbnailOverlay');
+  if (s === YT.PlayerState.PLAYING) thumbnailOverlay.classList.add('hidden');
+
+        
         if (s === 1) {
           timer = setInterval(() => {
             try {
