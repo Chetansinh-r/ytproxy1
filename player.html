@@ -181,6 +181,11 @@
             background: #fff;
             cursor: pointer;
         }
+        .playback-speed {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
         select {
             background: rgba(255, 255, 255, 0.1);
@@ -293,12 +298,14 @@
             </div>
 
             <div class="right-controls">
-                <select id="speedSelect">
-                    <option value="0.5">0.5x</option>
-                    <option value="1" selected>1x</option>
-                    <option value="1.5">1.5x</option>
-                    <option value="2">2x</option>
-                </select>
+                <div class="playback-speed">
+                        <select id="speedSelect">
+                            <option value="0.5">0.5x</option>
+                            <option value="1" selected>1x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2">2x</option>
+                        </select>
+                    </div>
             </div>
         </div>
     </div>
