@@ -9,9 +9,9 @@
 <style>
 :root {
   --yt-red: #ff0000;
-  --white: rgba(255,255,255,0.95);
-  --dim: rgba(255,255,255,0.65);
-  --track: rgba(255,255,255,0.25);
+  --white: rgba(255,255,255,.95);
+  --dim: rgba(255,255,255,.65);
+  --track: rgba(255,255,255,.25);
 }
 
 html, body {
@@ -22,8 +22,6 @@ html, body {
   overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
 }
-
-/* -------- Player -------- */
 
 #player-root {
   position: relative;
@@ -36,7 +34,7 @@ html, body {
   height: 100%;
 }
 
-/* -------- Controls -------- */
+/* ---------- Controls ---------- */
 
 .controls {
   position: absolute;
@@ -47,34 +45,24 @@ html, body {
   border-radius: 12px;
   background: linear-gradient(
     to top,
-    rgba(0,0,0,0.75),
-    rgba(0,0,0,0.2),
+    rgba(0,0,0,.75),
+    rgba(0,0,0,.2),
     rgba(0,0,0,0)
   );
   opacity: 0;
   transition: opacity .25s ease;
-  pointer-events: auto;
 }
 
 #player-root:hover .controls {
   opacity: 1;
 }
 
-/* -------- Seekbar -------- */
-
 .seekbar {
   width: 100%;
   height: 3px;
   margin-bottom: 10px;
   appearance: none;
-  border-radius: 2px;
-  background: linear-gradient(
-    to right,
-    var(--yt-red) 0%,
-    var(--yt-red) var(--progress, 0%),
-    var(--track) var(--progress, 0%),
-    var(--track) 100%
-  );
+  background: var(--track);
 }
 
 .seekbar::-webkit-slider-thumb {
@@ -84,8 +72,6 @@ html, body {
   border-radius: 50%;
   background: var(--yt-red);
 }
-
-/* -------- Row -------- */
 
 .row {
   display: flex;
@@ -107,28 +93,17 @@ button:hover {
   transform: scale(1.08);
 }
 
-/* -------- Icons -------- */
-
 .icon {
   width: 18px;
   height: 18px;
   fill: currentColor;
 }
 
-/* -------- Volume -------- */
-
 .volume {
   width: 70px;
   height: 3px;
   appearance: none;
-  border-radius: 2px;
-  background: linear-gradient(
-    to right,
-    var(--yt-red) 0%,
-    var(--yt-red) var(--volume, 100%),
-    var(--track) var(--volume, 100%),
-    var(--track) 100%
-  );
+  background: var(--track);
 }
 
 .volume::-webkit-slider-thumb {
@@ -139,42 +114,11 @@ button:hover {
   background: var(--yt-red);
 }
 
-/* -------- Time -------- */
-
 .time {
   font-size: 12px;
   font-weight: 500;
   color: var(--dim);
   min-width: 96px;
-}
-
-/* -------- Speed -------- */
-
-.speed {
-  position: relative;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.speed-menu {
-  position: absolute;
-  bottom: 26px;
-  right: 0;
-  background: rgba(20,20,20,.95);
-  border-radius: 8px;
-  padding: 6px 0;
-  display: none;
-}
-
-.speed-menu button {
-  padding: 6px 14px;
-  width: 100%;
-  text-align: left;
-  font-size: 13px;
-}
-
-.speed-menu button.active {
-  color: var(--white);
 }
 </style>
 
@@ -186,6 +130,7 @@ button:hover {
 <div id="player-root">
   <div id="youTubePlayer"></div>
 
+  <!-- UI ONLY -->
   <div class="controls">
     <input id="seekBar" class="seekbar" type="range" min="0" max="100" value="0">
 
@@ -194,50 +139,30 @@ button:hover {
       <button id="muteBtn"></button>
       <input id="volumeBar" class="volume" type="range" min="0" max="100" value="100">
       <div id="timeLabel" class="time">0:00 / 0:00</div>
-
-      <div class="speed">
-        <button id="speedBtn">1x</button>
-        <div class="speed-menu" id="speedMenu">
-          <button data-rate="0.5">0.5x</button>
-          <button data-rate="1" class="active">1x</button>
-          <button data-rate="1.5">1.5x</button>
-          <button data-rate="2">2x</button>
-        </div>
-      </div>
-
       <button id="fsBtn">⛶</button>
     </div>
   </div>
 </div>
 
 <script>
+/* ============================================================
+   ORIGINAL WORKING CODE — UNCHANGED
+   ============================================================ */
+
 const q = new URLSearchParams(location.search);
 const videoId = q.get("videoId") || "";
 const startAt = parseFloat(q.get("start") || "0");
 
-let player, timer, duration = 0;
-let isPlaying = false, isMuted = true;
-
-/* -------- Icons -------- */
-
-const ICONS = {
-  play: `<svg class="icon" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>`,
-  pause: `<svg class="icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
-  volume: `<svg class="icon" viewBox="0 0 24 24"><polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/></svg>`,
-  mute: `
-  <svg class="icon" viewBox="0 0 24 24">
-    <polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/>
-    <line x1="16" y1="8" x2="22" y2="16" stroke="currentColor" stroke-width="2"/>
-    <line x1="22" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2"/>
-  </svg>`
+const STATES = {
+  [-1]: "UNSTARTED",
+  0: "ENDED",
+  1: "PLAYING",
+  2: "PAUSED",
+  3: "BUFFERING",
+  5: "CUED",
 };
 
-function updateIcons() {
-  playBtn.innerHTML = isPlaying ? ICONS.pause : ICONS.play;
-  muteBtn.innerHTML = isMuted ? ICONS.mute : ICONS.volume;
-}
-
-/* -------- YouTube -------- */
+let player, timer;
 
 function onYouTubeIframeAPIReady() {
   player = new YT.Player("youTubePlayer", {
@@ -245,51 +170,93 @@ function onYouTubeIframeAPIReady() {
     height: "100%",
     playerVars: {
       autoplay: 1,
-            controls: 0,
-            cc_load_policy: 0,
-            fs: 1,
-            iv_load_policy: 3,
-            rel: 0,
-            enablejsapi: 1,
-            mute: 1,
-            playsinline: 1,
-            origin: "https://www.youtube.com",
-            modestbranding: 1,
-            disablekb: 1,
-            showinfo: 0,
+      controls: 0,
+      cc_load_policy: 0,
+      fs: 1,
+      iv_load_policy: 3,
+      rel: 0,
+      enablejsapi: 1,
+      mute: 1,
+      playsinline: 1,
+      origin: location.origin,
+      modestbranding: 1,
+      disablekb: 1,
+      showinfo: 0,
     },
     events: {
       onReady: () => {
-        if (!videoId) return;
-        player.mute();
-        updateIcons();
-        player.loadVideoById({
-          videoId: videoId,
-          startSeconds: startAt
-        });
+        document.title = "ytplayer://onReady";
+        if (videoId) loadVideo(videoId, startAt);
       },
-      onStateChange: e => onState(e.data)
-    }
+      onStateChange: (e) => stateChanged(e.data),
+      onError: (e) =>
+        (document.title = "ytplayer://onError?data=" + e.data),
+    },
   });
 }
 
-function onState(s) {
+function stateChanged(s) {
   clearInterval(timer);
-  isPlaying = s === 1;
-  updateIcons();
+  document.title = "ytplayer://onStateChange?data=" + (STATES[s] || "");
 
-  if (isPlaying) {
-    duration = player.getDuration() || 0;
-    timer = setInterval(updateTime, 250);
+  if (s === 1) {
+    timer = setInterval(() => {
+      try {
+        const t = player.getCurrentTime();
+        document.title = "ytplayer://onCurrentTimeChange?data=" + t;
+        updateUI(t);
+      } catch (e) {}
+    }, 200);
+
+    try {
+      const d = player.getDuration();
+      if (d > 0)
+        document.title = "ytplayer://onVideoDuration?data=" + d;
+    } catch (e) {}
   }
 }
 
-function updateTime() {
-  const t = player.getCurrentTime();
-  const p = duration ? (t / duration) * 100 : 0;
-  seekBar.value = p;
-  seekBar.style.setProperty("--progress", p + "%");
-  timeLabel.textContent = fmt(t) + " / " + fmt(duration);
+function loadVideo(id, sec) {
+  if (player && player.loadVideoById) {
+    player.loadVideoById(id, sec || 0);
+    document.title = "ytplayer://onVideoId?data=" + id;
+  }
+}
+
+function playVideo() { player.playVideo(); }
+function pauseVideo() { player.pauseVideo(); }
+function seekTo(s) { player.seekTo(s, true); }
+function mute() { player.mute(); }
+function unMute() { player.unMute(); }
+
+function setVolume(v) {
+  if (!player) return;
+  v = Math.max(0, Math.min(100, Math.round(v)));
+  player.setVolume(v);
+  v === 0 ? mute() : unMute();
+}
+
+/* ============================================================
+   UI LAYER (ADDED ONLY)
+   ============================================================ */
+
+const ICONS = {
+  play: `<svg class="icon" viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20"/></svg>`,
+  pause: `<svg class="icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`,
+  volume: `<svg class="icon" viewBox="0 0 24 24"><polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/></svg>`,
+  mute: `<svg class="icon" viewBox="0 0 24 24"><polygon points="3,9 7,9 12,4 12,20 7,15 3,15"/><line x1="16" y1="8" x2="22" y2="16" stroke="white" stroke-width="2"/><line x1="22" y1="8" x2="16" y2="16" stroke="white" stroke-width="2"/></svg>`
+};
+
+let isPlaying = false;
+let isMuted = false;
+let duration = 0;
+
+function updateUI(t) {
+  try {
+    duration = player.getDuration() || 0;
+    seekBar.value = duration ? (t / duration) * 100 : 0;
+    timeLabel.textContent = fmt(t) + " / " + fmt(duration);
+  } catch (e) {}
 }
 
 const fmt = s => {
@@ -298,28 +265,16 @@ const fmt = s => {
   return m + ":" + (r < 10 ? "0" : "") + r;
 };
 
-/* -------- API (unchanged) -------- */
-
-function playVideo() { player.playVideo(); }
-function pauseVideo() { player.pauseVideo(); }
-function mute() { player.mute(); }
-function unMute() { player.unMute(); }
-function seekTo(s) { player.seekTo(s, true); }
-function setVolume(v) {
-  player.setVolume(v);
-  volumeBar.style.setProperty("--volume", v + "%");
-  v == 0 ? mute() : unMute();
-}
-function setPlaybackRate(r) { player.setPlaybackRate(r); }
-
-/* -------- UI -------- */
-
-playBtn.onclick = () => isPlaying ? pauseVideo() : playVideo();
+playBtn.onclick = () => {
+  isPlaying = !isPlaying;
+  isPlaying ? playVideo() : pauseVideo();
+  playBtn.innerHTML = isPlaying ? ICONS.pause : ICONS.play;
+};
 
 muteBtn.onclick = () => {
   isMuted = !isMuted;
   isMuted ? mute() : unMute();
-  updateIcons();
+  muteBtn.innerHTML = isMuted ? ICONS.mute : ICONS.volume;
 };
 
 volumeBar.oninput = e => setVolume(e.target.value);
@@ -327,24 +282,11 @@ volumeBar.oninput = e => setVolume(e.target.value);
 seekBar.oninput = e =>
   duration && seekTo((e.target.value / 100) * duration);
 
-speedBtn.onclick = () =>
-  speedMenu.style.display =
-    speedMenu.style.display === "block" ? "none" : "block";
-
-speedMenu.querySelectorAll("button").forEach(b => {
-  b.onclick = () => {
-    setPlaybackRate(b.dataset.rate);
-    speedBtn.textContent = b.dataset.rate + "x";
-    speedMenu.style.display = "none";
-    speedMenu.querySelectorAll("button").forEach(x => x.classList.remove("active"));
-    b.classList.add("active");
-  };
-});
-
 fsBtn.onclick = () =>
   document.title = "ytplayer://onFullscreenToggle";
 
-updateIcons();
+playBtn.innerHTML = ICONS.play;
+muteBtn.innerHTML = ICONS.volume;
 </script>
 
 </body>
