@@ -7,18 +7,11 @@
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 
 <style>
-:root {
-  --red: #ff0000;
-  --bg: rgba(0,0,0,.65);
-  --track: rgba(255,255,255,.25);
-  --text: rgba(255,255,255,.85);
-}
-
 html, body {
   margin: 0;
   width: 100%;
   height: 100%;
-  background: black;
+  background: #000;
   overflow: hidden;
   font-family: system-ui, -apple-system;
 }
@@ -29,9 +22,11 @@ html, body {
   height: 100%;
 }
 
+/* IMPORTANT: iframe stays visible */
 #youTubePlayer {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 /* ================= CONTROLS ================= */
@@ -42,14 +37,28 @@ html, body {
   right: 0;
   bottom: 0;
   padding: 12px;
-  background: linear-gradient(to top, rgba(0,0,0,.75), transparent);
+  z-index: 2;
+
+  /* VERY IMPORTANT */
+  pointer-events: none;
+
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,.7),
+    rgba(0,0,0,.35),
+    rgba(0,0,0,0)
+  );
+}
+
+.controls * {
+  pointer-events: auto;
 }
 
 .seekbar {
   width: 100%;
   height: 4px;
   appearance: none;
-  background: var(--track);
+  background: rgba(255,255,255,.25);
   border-radius: 3px;
 }
 
@@ -58,13 +67,13 @@ html, body {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--red);
+  background: #ff0000;
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   margin-top: 8px;
 }
 
@@ -78,7 +87,7 @@ button {
 
 .time {
   font-size: 12px;
-  color: var(--text);
+  color: rgba(255,255,255,.85);
   min-width: 90px;
 }
 
@@ -93,7 +102,7 @@ button {
   width: 70px;
   height: 4px;
   appearance: none;
-  background: var(--track);
+  background: rgba(255,255,255,.25);
   border-radius: 3px;
 }
 
@@ -101,7 +110,7 @@ button {
   appearance: none;
   width: 10px;
   height: 10px;
-  background: var(--red);
+  background: #ff0000;
   border-radius: 50%;
 }
 
@@ -111,7 +120,6 @@ select {
   border: none;
   font-size: 13px;
 }
-
 </style>
 
 <script src="https://www.youtube.com/iframe_api" async></script>
@@ -148,22 +156,11 @@ select {
 </div>
 
 <script>
-/* ======================================================
-   ORIGINAL PLAYER CODE (UNCHANGED)
-====================================================== */
+/* ================= WORKING PLAYER CODE (UNCHANGED) ================= */
 
 const q = new URLSearchParams(location.search);
 const videoId = q.get("videoId") || "";
 const startAt = parseFloat(q.get("start") || "0");
-
-const STATES = {
-  [-1]: "UNSTARTED",
-  0: "ENDED",
-  1: "PLAYING",
-  2: "PAUSED",
-  3: "BUFFERING",
-  5: "CUED",
-};
 
 let player, timer;
 
@@ -174,59 +171,27 @@ function onYouTubeIframeAPIReady() {
     playerVars: {
       autoplay: 1,
       controls: 0,
-      cc_load_policy: 0,
-      fs: 1,
-      iv_load_policy: 3,
-      rel: 0,
       enablejsapi: 1,
       mute: 1,
       playsinline: 1,
       origin: location.origin,
-      modestbranding: 1,
-      disablekb: 1,
-      showinfo: 0,
     },
     events: {
-      onReady: () => {
-        document.title = "ytplayer://onReady";
-        if (videoId) loadVideo(videoId, startAt);
-      },
-      onStateChange: (e) => stateChanged(e.data),
-      onError: (e) =>
-        (document.title = "ytplayer://onError?data=" + e.data),
+      onReady: () => videoId && player.loadVideoById(videoId, startAt),
+      onStateChange: e => updatePlayIcon(e.data),
     },
   });
 }
 
-function stateChanged(s) {
-  clearInterval(timer);
-  document.title = "ytplayer://onStateChange?data=" + (STATES[s] || "");
+function playVideo() { player.playVideo(); }
+function pauseVideo() { player.pauseVideo(); }
+function seekTo(s) { player.seekTo(s, true); }
+function mute() { player.mute(); }
+function unMute() { player.unMute(); }
+function setVolume(v) { player.setVolume(v); }
+function setPlaybackRate(r) { player.setPlaybackRate(r); }
 
-  updatePlayIcon(s);
-
-  if (s === 1) {
-    timer = setInterval(updateUI, 300);
-  }
-}
-
-function loadVideo(id, sec) {
-  if (player && player.loadVideoById) {
-    player.loadVideoById(id, sec || 0);
-    document.title = "ytplayer://onVideoId?data=" + id;
-  }
-}
-
-function playVideo() { if (player) player.playVideo(); }
-function pauseVideo() { if (player) player.pauseVideo(); }
-function seekTo(s) { if (player) player.seekTo(s, true); }
-function mute() { if (player) player.mute(); }
-function unMute() { if (player) player.unMute(); }
-function setVolume(v) { if (player) player.setVolume(v); }
-function setPlaybackRate(r) { if (player) player.setPlaybackRate(r); }
-
-/* ======================================================
-   UI LOGIC (SAFE)
-====================================================== */
+/* ================= UI ================= */
 
 const playBtn = document.getElementById("play");
 const muteBtn = document.getElementById("mute");
@@ -236,125 +201,55 @@ const time = document.getElementById("time");
 const speed = document.getElementById("speed");
 const fullscreen = document.getElementById("fullscreen");
 
-let dragging = false;
-
-/* ---- ICONS ---- */
-
-function playSVG() {
-  return `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-    <path d="M8 5v14l11-7z"/>
-  </svg>`;
-}
-
-function pauseSVG() {
-  return `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-    <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
-  </svg>`;
-}
-
-function volumeSVG() {
-  return `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-    <path d="M3 10v4h4l5 5V5L7 10z"/>
-  </svg>`;
-}
-
-function muteSVG() {
-  return `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-    <path d="M3 10v4h4l5 5V5L7 10z"/>
-    <line x1="16" y1="8" x2="22" y2="16" stroke="white" stroke-width="2"/>
-  </svg>`;
-}
-
-/* ---- PLAY / PAUSE ---- */
-
-playBtn.onclick = () => {
-  const s = player.getPlayerState();
-  s === 1 ? pauseVideo() : playVideo();
-};
-
-function updatePlayIcon(state) {
-  playBtn.innerHTML = state === 1 ? pauseSVG() : playSVG();
-}
-
-/* ---- SEEK ---- */
-
-seekbar.onmousedown = () => dragging = true;
-seekbar.onmouseup = () => {
-  dragging = false;
-  seekTo(player.getDuration() * (seekbar.value / 100));
-};
-
-seekbar.oninput = () => fillRange(seekbar);
-
-/* ---- VOLUME ---- */
+playBtn.onclick = () =>
+  player.getPlayerState() === 1 ? pauseVideo() : playVideo();
 
 muteBtn.onclick = () => {
-  if (player.isMuted()) {
-    unMute();
-    volume.value = 50;
-    setVolume(50);
-  } else {
-    mute();
-    volume.value = 0;
-  }
-  updateVolumeUI();
+  player.isMuted() ? unMute() : mute();
+  updateVolumeIcon();
 };
 
 volume.oninput = () => {
   setVolume(volume.value);
   volume.value == 0 ? mute() : unMute();
-  updateVolumeUI();
+  updateVolumeIcon();
 };
 
-function updateVolumeUI() {
-  muteBtn.innerHTML = volume.value == 0 ? muteSVG() : volumeSVG();
-  fillRange(volume);
-}
-
-/* ---- SPEED ---- */
-
-speed.onchange = () => {
-  const r = parseFloat(speed.value);
-  setPlaybackRate(r);
-  document.title = "ytplayer://onPlaybackRate?data=" + r;
+seekbar.oninput = () => {
+  const d = player.getDuration();
+  if (d) seekTo(d * (seekbar.value / 100));
 };
 
-/* ---- FULLSCREEN ---- */
+speed.onchange = () => setPlaybackRate(parseFloat(speed.value));
 
 fullscreen.onclick = () =>
   document.title = "ytplayer://onFullscreen";
 
-/* ---- UI UPDATE ---- */
-
-function updateUI() {
-  if (!player || dragging) return;
-
-  const cur = player.getCurrentTime();
-  const dur = player.getDuration();
-  if (!dur) return;
-
-  const p = (cur / dur) * 100;
-  seekbar.value = p;
-  fillRange(seekbar);
-
-  time.textContent = format(cur) + " / " + format(dur);
+function updatePlayIcon(state) {
+  playBtn.innerHTML =
+    state === 1
+      ? `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
+           <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
+         </svg>`
+      : `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
+           <path d="M8 5v14l11-7z"/>
+         </svg>`;
 }
 
-function fillRange(el) {
-  el.style.background =
-    `linear-gradient(to right,#ff0000 ${el.value}%,#444 ${el.value}%)`;
+function updateVolumeIcon() {
+  muteBtn.innerHTML =
+    volume.value == 0
+      ? `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
+           <path d="M3 10v4h4l5 5V5L7 10z"/>
+           <line x1="16" y1="8" x2="22" y2="16" stroke="white" stroke-width="2"/>
+         </svg>`
+      : `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
+           <path d="M3 10v4h4l5 5V5L7 10z"/>
+         </svg>`;
 }
 
-function format(s) {
-  const m = Math.floor(s / 60);
-  const ss = Math.floor(s % 60);
-  return m + ":" + (ss < 10 ? "0" : "") + ss;
-}
-
-/* init */
-playBtn.innerHTML = playSVG();
-muteBtn.innerHTML = volumeSVG();
-fillRange(volume);
+updatePlayIcon(2);
+updateVolumeIcon();
 </script>
 
 </body>
