@@ -407,6 +407,7 @@
         }
 
         var videoId=null;
+        var durationInitialized = false;
         
         // Format time to MM:SS
         function formatTime(seconds) {
@@ -455,6 +456,7 @@
 
         function loadVideo(id,sec=0){
             if(!player)return;
+            durationInitialized=false
             videoId=id;
             player.loadVideoById(id,sec);
             dispatchCallback('onVideoId',id);
@@ -468,7 +470,7 @@
             
             // Set initial duration
             const duration = player.getDuration();
-            durationDisplay.textContent = formatTime(duration);
+            // durationDisplay.textContent = formatTime(duration);
             timeIndicator.textContent = `0:00 / ${formatTime(duration)}`;
             
             // Start UI update interval
@@ -493,6 +495,17 @@
         // Player state change callback
         function onPlayerStateChange(event) {
             updatePlayPauseIcon();
+
+            if (!durationInitialized &&
+                (event.data === YT.PlayerState.CUED ||
+                 event.data === YT.PlayerState.PLAYING)) {
+
+                const d = player.getDuration();
+                if (d && !isNaN(d)) {
+                    durationDisplay.textContent = formatTime(d);
+                    durationInitialized = true;
+                }
+            }
             
             if (event.data === YT.PlayerState.PLAYING) {
                 // Hide overlays when playing
