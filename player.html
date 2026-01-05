@@ -430,7 +430,7 @@ muteBtn.addEventListener('click',()=>{
     else{mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}
     startControllerTimeout();
 });
-volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); dispatchCallback('onVolumeChange', volumeSlider.value); startControllerTimeout();});
+volumeSlider.addEventListener('input',()=>{setVolume(volumeSlider.value); if(volumeSlider.value===0){player.mute(); muteBtn.querySelector('i').className='fas fa-volume-mute';}else {player.unMute();muteBtn.querySelector('i').className='fas fa-volume-up';}  dispatchCallback('onVolumeChange', volumeSlider.value); startControllerTimeout();});
 speedSelect.addEventListener('change',()=>{setPlaybackRate(parseFloat(speedSelect.value)); startControllerTimeout();});
 seekBar.addEventListener('click',e=>{const r=seekBar.getBoundingClientRect();seekTo(player.getDuration()*((e.clientX-r.left)/r.width));});
 
