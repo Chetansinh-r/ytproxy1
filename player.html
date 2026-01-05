@@ -1,256 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="referrer" content="strict-origin-when-cross-origin" />
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #000;
+        overflow: hidden;
+      }
+      #youTubePlayer {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+    <script src="https://www.youtube.com/iframe_api" async></script>
+  </head>
+  <body>
+    <div id="youTubePlayer"></div>
 
-<style>
-html, body {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
-  overflow: hidden;
-  font-family: system-ui, -apple-system;
-}
+    <script>
+      const q = new URLSearchParams(location.search);
+      const videoId = q.get("videoId") || "";
+      const startAt = parseFloat(q.get("start") || "0");
 
-#player-root {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
+      const STATES = {
+        [-1]: "UNSTARTED",
+        0: "ENDED",
+        1: "PLAYING",
+        2: "PAUSED",
+        3: "BUFFERING",
+        5: "CUED",
+      };
 
-/* IMPORTANT: iframe stays visible */
-#youTubePlayer {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
+      let player, timer;
+      // let lastVolume = -1;
+      // let lastMuted = null;
+      // let volumeDebounceTimer = null;
 
-/* ================= CONTROLS ================= */
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player("youTubePlayer", {
+          width: "100%",
+          height: "100%",
+          playerVars: {
+            autoplay: 1,
+            controls: 0,
+            cc_load_policy: 0,
+            fs: 1,
+            iv_load_policy: 3,
+            rel: 0,
+            enablejsapi: 1,
+            mute: 1,
+            playsinline: 1,
+            origin: location.origin,
+            modestbranding: 1,
+            disablekb: 1,
+            showinfo: 0,
+          },
+          events: {
+            onReady: () => {
+              document.title = "ytplayer://onReady";
+              if (videoId) loadVideo(videoId, startAt);
+            },
+            onStateChange: (e) => stateChanged(e.data),
+            onError: (e) =>
+              (document.title = "ytplayer://onError?data=" + e.data),
+          },
+        });
+      }
 
-.controls {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 12px;
-  z-index: 2;
+      function stateChanged(s) {
+        clearInterval(timer);
+        document.title = "ytplayer://onStateChange?data=" + (STATES[s] || "");
+        if (s === 1) {
+          timer = setInterval(() => {
+            try {
+              document.title =
+                "ytplayer://onCurrentTimeChange?data=" +
+                player.getCurrentTime();
+            } catch (e) {}
+          }, 200);
+          try {
+            const d = player.getDuration();
+            if (d > 0)
+              document.title = "ytplayer://onVideoDuration?data=" + d;
+          } catch (e) {}
+        }
+      }
 
-  /* VERY IMPORTANT */
-  pointer-events: none;
+      function loadVideo(id, sec) {
+        if (player && player.loadVideoById) {
+          player.loadVideoById(id, sec || 0);
+          document.title = "ytplayer://onVideoId?data=" + id;
+        }
+      }
 
-  background: linear-gradient(
-    to top,
-    rgba(0,0,0,.7),
-    rgba(0,0,0,.35),
-    rgba(0,0,0,0)
-  );
-}
+      function playVideo() {
+        if (player && player.playVideo) player.playVideo();
+      }
 
-.controls * {
-  pointer-events: auto;
-}
+      function pauseVideo() {
+        if (player && player.pauseVideo) player.pauseVideo();
+      }
 
-.seekbar {
-  width: 100%;
-  height: 4px;
-  appearance: none;
-  background: rgba(255,255,255,.25);
-  border-radius: 3px;
-}
+      function seekTo(s) {
+        if (player && player.seekTo) player.seekTo(s, true);
+      }
 
-.seekbar::-webkit-slider-thumb {
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #ff0000;
-}
+      function mute() {
+        if (player && player.mute) player.mute();
+      }
 
-.row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 8px;
-}
+      function unMute() {
+        if (player && player.unMute) player.unMute();
+      }
 
-button {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: white;
-}
+          
+      function setVolume(volumePercent) {
+          try {
+              if (!player || typeof player.setVolume !== "function") return;
+      
+              let v = Number(volumePercent);
+              if (isNaN(v)) return;
+      
+              // Clamp between 0–100
+              v = Math.max(0, Math.min(100, Math.round(v)));
+      
+              // Apply debounce to prevent flooding YouTube API
+              if (window._volumeDebounceTimer) clearTimeout(window._volumeDebounceTimer);
+      
+              window._volumeDebounceTimer = setTimeout(() => {
+                  try {
+                      player.setVolume(v);
+      
+                      // Mute if volume is 0, else unmute
+                      if (v === 0) {
+                          if (typeof player.mute === "function") player.mute();
+                      } else {
+                          if (typeof player.unMute === "function") player.unMute();
+                      }
+      
+                  } catch (e) {
+                      console.warn("Error applying volume:", e);
+                  }
+              }, 100); // 100ms debounce
+          } catch (e) {
+              console.warn("setVolume error:", e);
+          }
+      }
 
-.time {
-  font-size: 12px;
-  color: rgba(255,255,255,.85);
-  min-width: 90px;
-}
-
-.volume-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 110px;
-}
-
-.volume {
-  width: 70px;
-  height: 4px;
-  appearance: none;
-  background: rgba(255,255,255,.25);
-  border-radius: 3px;
-}
-
-.volume::-webkit-slider-thumb {
-  appearance: none;
-  width: 10px;
-  height: 10px;
-  background: #ff0000;
-  border-radius: 50%;
-}
-
-select {
-  background: transparent;
-  color: white;
-  border: none;
-  font-size: 13px;
-}
-</style>
-
-<script src="https://www.youtube.com/iframe_api" async></script>
-</head>
-
-<body>
-
-<div id="player-root">
-  <div id="youTubePlayer"></div>
-
-  <div class="controls">
-    <input id="seekbar" class="seekbar" type="range" min="0" max="100" value="0">
-
-    <div class="row">
-      <button id="play"></button>
-
-      <div class="volume-group">
-        <button id="mute"></button>
-        <input id="volume" class="volume" type="range" min="0" max="100" value="50">
-      </div>
-
-      <div id="time" class="time">0:00 / 0:00</div>
-
-      <select id="speed">
-        <option value="0.5">0.5x</option>
-        <option value="1" selected>1x</option>
-        <option value="1.5">1.5x</option>
-        <option value="2">2x</option>
-      </select>
-
-      <button id="fullscreen">⛶</button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ================= WORKING PLAYER CODE (UNCHANGED) ================= */
-
-const q = new URLSearchParams(location.search);
-const videoId = q.get("videoId") || "";
-const startAt = parseFloat(q.get("start") || "0");
-
-let player, timer;
-
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player("youTubePlayer", {
-    width: "100%",
-    height: "100%",
-    playerVars: {
-      autoplay: 1,
-      controls: 0,
-      enablejsapi: 1,
-      mute: 1,
-      playsinline: 1,
-      origin: location.origin,
-    },
-    events: {
-      onReady: () => videoId && player.loadVideoById(videoId, startAt),
-      onStateChange: e => updatePlayIcon(e.data),
-    },
-  });
-}
-
-function playVideo() { player.playVideo(); }
-function pauseVideo() { player.pauseVideo(); }
-function seekTo(s) { player.seekTo(s, true); }
-function mute() { player.mute(); }
-function unMute() { player.unMute(); }
-function setVolume(v) { player.setVolume(v); }
-function setPlaybackRate(r) { player.setPlaybackRate(r); }
-
-/* ================= UI ================= */
-
-const playBtn = document.getElementById("play");
-const muteBtn = document.getElementById("mute");
-const seekbar = document.getElementById("seekbar");
-const volume = document.getElementById("volume");
-const time = document.getElementById("time");
-const speed = document.getElementById("speed");
-const fullscreen = document.getElementById("fullscreen");
-
-playBtn.onclick = () =>
-  player.getPlayerState() === 1 ? pauseVideo() : playVideo();
-
-muteBtn.onclick = () => {
-  player.isMuted() ? unMute() : mute();
-  updateVolumeIcon();
-};
-
-volume.oninput = () => {
-  setVolume(volume.value);
-  volume.value == 0 ? mute() : unMute();
-  updateVolumeIcon();
-};
-
-seekbar.oninput = () => {
-  const d = player.getDuration();
-  if (d) seekTo(d * (seekbar.value / 100));
-};
-
-speed.onchange = () => setPlaybackRate(parseFloat(speed.value));
-
-fullscreen.onclick = () =>
-  document.title = "ytplayer://onFullscreen";
-
-function updatePlayIcon(state) {
-  playBtn.innerHTML =
-    state === 1
-      ? `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-           <path d="M6 19h4V5H6zm8-14v14h4V5z"/>
-         </svg>`
-      : `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-           <path d="M8 5v14l11-7z"/>
-         </svg>`;
-}
-
-function updateVolumeIcon() {
-  muteBtn.innerHTML =
-    volume.value == 0
-      ? `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-           <path d="M3 10v4h4l5 5V5L7 10z"/>
-           <line x1="16" y1="8" x2="22" y2="16" stroke="white" stroke-width="2"/>
-         </svg>`
-      : `<svg width="18" height="18" fill="white" viewBox="0 0 24 24">
-           <path d="M3 10v4h4l5 5V5L7 10z"/>
-         </svg>`;
-}
-
-updatePlayIcon(2);
-updateVolumeIcon();
-</script>
-
-</body>
+      function setPlaybackRate(r) {
+        if (player && player.setPlaybackRate) player.setPlaybackRate(r);
+      }
+      
+    </script>
+  </body>
 </html>
