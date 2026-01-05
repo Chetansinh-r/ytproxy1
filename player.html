@@ -361,7 +361,7 @@ function onYouTubeIframeAPIReady(){
     player=new YT.Player('youTubePlayer',{height:'100%',width:'100%',playerVars:{
         disablekb:1,autoplay:0,controls:0,enablejsapi:1,modestbranding:1,playsinline:1,rel:0,fs:1,iv_load_policy:3
     },events:{
-        onReady:()=>document.title=`ytplayer://${'onReady'}?data=${'true'}`
+        onReady:()=>document.title=`ytplayer://${'onReady'}?data=${'true'}`,
         onStateChange:onPlayerStateChange,
         onError:e=>document.title=`ytplayer://${'onError'}?data=${e.data}`
     }});
