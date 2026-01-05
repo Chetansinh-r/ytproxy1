@@ -350,18 +350,24 @@ function setThumbnailBackground(){
 
 function startCurrentTimeTimer(){
     clearInterval(currentTimeTimer);
-    currentTimeTimer=setInterval(()=>{
-        if(player.getPlayerState()===YT.PlayerState.PLAYING){
-            const t=player.getCurrentTime();
-            const d=player.getDuration();
-            currentTimeDisplay.textContent=formatTime(t);
-            durationDisplay.textContent=formatTime(d);
-            progress.style.width=(t/d*100)+'%';
-            document.title=`ytplayer://${'onCurrentTimeChange'}?data=${t}`;
-            document.title=`ytplayer://${'onVideoDuration'}?data=${d}`;  
-            
-        }
-    },200);
+    if(player.getPlayerState()===YT.PlayerState.PLAYING){
+        currentTimeTimer = setInterval(() => {
+            try {
+                        const t=player.getCurrentTime();
+                        currentTimeDisplay.textContent=formatTime(t);
+                        document.title=`ytplayer://${'onCurrentTimeChange'}?data=${t}`;
+                      
+                    } catch (e) {}
+                }, 200);
+        try {
+                    const d = player.getDuration();
+                    durationDisplay.textContent=formatTime(d);
+                    if (d > 0)
+                      document.title = "ytplayer://onVideoDuration?data=" + d;
+                  } catch (e) {}
+                  
+                    
+    }
 }
 
 function onPlayerStateChange(e){
