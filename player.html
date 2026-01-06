@@ -416,6 +416,7 @@
         var durationInitialized = false;
         let lastSeek = 0;
         let controlsUIHidden= false
+        let hideBackButton= false
         
         // Format time to MM:SS
         function formatTime(seconds) {
@@ -856,24 +857,32 @@
         function startControllerTimeout() {
             if (controlsUIHidden) return;
             controllerOverlay.classList.remove('hidden');
-            topNav.classList.remove('hidden');
+            if(!hideBackButton) topNav.classList.remove('hidden');
             
             clearTimeout(controllerTimeout);
             controllerTimeout = setTimeout(() => {
                 controllerOverlay.classList.add('hidden');
-                topNav.classList.add('hidden');
+                if (!hideBackButton) {
+                    topNav.classList.add('hidden');
+                }
             }, 3000);
         }
 
-        function setControlsUIHidden(hidden) {
+        function setControlsUIHidden(hidden, hideBack) {
             controlsUIHidden = !!hidden;
+            hideBackButton = !!hideBack;
+
+
+            if (controlsUIHidden || hideBackButton) {
+                topNav.classList.add('hidden');
+            } else {
+                topNav.classList.remove('hidden');
+            }
 
             if (controlsUIHidden) {
-                topNav.classList.add('hidden');
                 controllerOverlay.classList.add('hidden');
                 controllerOverlay.style.pointerEvents = 'none';
             } else {
-                topNav.classList.remove('hidden');
                 controllerOverlay.classList.remove('hidden');
                 controllerOverlay.style.pointerEvents = 'auto';
                 startControllerTimeout();
@@ -887,7 +896,7 @@
             // Update cursor trail position
             
             // Show controls
-            topNav.classList.remove('hidden');
+            if(!hideBackButton) topNav.classList.remove('hidden');
             controllerOverlay.classList.remove('hidden');
             startControllerTimeout();
             
