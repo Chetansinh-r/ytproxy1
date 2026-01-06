@@ -403,6 +403,7 @@
 
         var videoId=null;
         var durationInitialized = false;
+        let lastSeek = 0;
         
         // Format time to MM:SS
         function formatTime(seconds) {
@@ -771,6 +772,10 @@
         });
         
         function handleSeek(e) {
+            const now = Date.now();
+            if (now - lastSeek < 100) return; // throttle
+            lastSeek = now;
+    
             if (!player || !player.getDuration) return;
             
             const rect = seekBar.getBoundingClientRect();
