@@ -436,7 +436,7 @@
         // Player ready callback
         function onPlayerReady(event) {
             dispatchCallback('onReady', 'true');
-
+            if (videoId) loadVideo(videoId, "0");
             // Hide YouTube controls
             hidePlayerControls();
         }
