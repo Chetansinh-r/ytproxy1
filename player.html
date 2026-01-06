@@ -372,6 +372,10 @@
                             <option value="2">2x</option>
                         </select>
                     </div>
+
+                    <button class="control-btn" id="fullscreenBtn">
+                        <i class="fas fa-expand"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -399,6 +403,7 @@
         const cursorTrail = document.getElementById('cursorTrail');
         const thumbnailOverlay = document.getElementById('thumbnailOverlay');
         const loadingIndicator = document.getElementById('loadingIndicator');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
 
 
         var videoId=null;
@@ -685,6 +690,13 @@
             }
         }
 
+        function setFullscreenUI(isFullscreen) {
+            const icon = fullscreenBtn.querySelector('i');
+            icon.classList.toggle('fa-expand', !isFullscreen);
+            icon.classList.toggle('fa-compress', isFullscreen);
+        }
+
+
         function debounce(fn, delay) {
             let t;
             return function (...args) {
@@ -727,6 +739,12 @@
             }
             startControllerTimeout();
         });
+
+        fullscreenBtn.addEventListener('click', function () {
+            dispatchCallback('onFullscreenToggle', 'true');
+            startControllerTimeout();
+        });
+
         
         volumeSlider.addEventListener('input', function() {
             player.setVolume(parseInt(this.value));
@@ -775,7 +793,7 @@
             const now = Date.now();
             if (now - lastSeek < 100) return; // throttle
             lastSeek = now;
-    
+
             if (!player || !player.getDuration) return;
             
             const rect = seekBar.getBoundingClientRect();
