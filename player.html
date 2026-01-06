@@ -454,6 +454,14 @@
 
             // Hide YouTube controls
             hidePlayerControls();
+
+            if (controlsUIHidden) {
+                controllerOverlay.classList.add('hidden');
+                controllerOverlay.style.pointerEvents = 'none';
+            } else {
+                controllerOverlay.classList.remove('hidden');
+                controllerOverlay.style.pointerEvents = 'auto';
+            }
         }
 
         function loadVideo(id,sec=0){
