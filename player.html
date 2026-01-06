@@ -398,7 +398,6 @@
         const seekBar = document.getElementById('seekBar');
         const progress = document.getElementById('progress');
         const controllerOverlay = document.getElementById('controllerOverlay');
-        const videoTitle = document.getElementById('videoTitle');
         const videoOverlay = document.getElementById('videoOverlay');
         const cursorTrail = document.getElementById('cursorTrail');
         const thumbnailOverlay = document.getElementById('thumbnailOverlay');
@@ -703,10 +702,10 @@
 
             if (!showControlsUI) {
                 controllerOverlay.classList.add('hidden');
-                controllerOverlay.style.pointerEvents = 'none';
+                // controllerOverlay.style.pointerEvents = 'none';
             } else {
                 controllerOverlay.classList.remove('hidden');
-                controllerOverlay.style.pointerEvents = 'auto';
+                // controllerOverlay.style.pointerEvents = 'auto';
                 startControllerTimeout();
             }
         }
@@ -827,12 +826,10 @@
             if (!showControlsUI) return;
 
             controllerOverlay.classList.remove('hidden');
-            videoTitle.classList.remove('hidden');
             
             clearTimeout(controllerTimeout);
             controllerTimeout = setTimeout(() => {
                 controllerOverlay.classList.add('hidden');
-                videoTitle.classList.add('hidden');
             }, 3000);
         }
         
@@ -847,7 +844,6 @@
             
             // Show controls
             controllerOverlay.classList.remove('hidden');
-            videoTitle.classList.remove('hidden');
             startControllerTimeout();
             
             // Hide cursor trail after animation
