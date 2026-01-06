@@ -398,6 +398,7 @@
         const seekBar = document.getElementById('seekBar');
         const progress = document.getElementById('progress');
         const controllerOverlay = document.getElementById('controllerOverlay');
+        const videoTitle = document.getElementById('videoTitle');
         const videoOverlay = document.getElementById('videoOverlay');
         const cursorTrail = document.getElementById('cursorTrail');
         const thumbnailOverlay = document.getElementById('thumbnailOverlay');
@@ -408,7 +409,7 @@
         var videoId=null;
         var durationInitialized = false;
         let lastSeek = 0;
-        var showControlsUI = true;
+        var controlsUIHidden = false;
 
         
         // Format time to MM:SS
@@ -698,14 +699,14 @@
         }
 
         function setControlsUIHidden(hidden) {
-            showControlsUI = hidden;
+            controlsUIHidden = !!hidden;
 
-            if (!showControlsUI) {
+            if (controlsUIHidden) {
                 controllerOverlay.classList.add('hidden');
-                // controllerOverlay.style.pointerEvents = 'none';
+                controllerOverlay.style.pointerEvents = 'none';
             } else {
                 controllerOverlay.classList.remove('hidden');
-                // controllerOverlay.style.pointerEvents = 'auto';
+                controllerOverlay.style.pointerEvents = 'auto';
                 startControllerTimeout();
             }
         }
@@ -823,19 +824,21 @@
         
         // Controller visibility timeout
         function startControllerTimeout() {
-            if (!showControlsUI) return;
+            if (controlsUIHidden) return;
 
             controllerOverlay.classList.remove('hidden');
+            videoTitle.classList.remove('hidden');
             
             clearTimeout(controllerTimeout);
             controllerTimeout = setTimeout(() => {
                 controllerOverlay.classList.add('hidden');
+                videoTitle.classList.add('hidden');
             }, 3000);
         }
         
         // Show controller on mouse move
         document.addEventListener('mousemove', function(e) {
-            if (!showControlsUI) return;
+            if (controlsUIHidden) return;
 
             // Update cursor trail position
             cursorTrail.style.left = e.clientX + 'px';
@@ -844,6 +847,7 @@
             
             // Show controls
             controllerOverlay.classList.remove('hidden');
+            videoTitle.classList.remove('hidden');
             startControllerTimeout();
             
             // Hide cursor trail after animation
@@ -854,7 +858,7 @@
         
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            if (!showControlsUI) return;
+            if (controlsUIHidden) return;
             if (e.target.tagName.toLowerCase() === 'input') return;
             
             switch (e.key) {
