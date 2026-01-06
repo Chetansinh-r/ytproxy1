@@ -630,22 +630,22 @@
 
         function unMute(){
             if(!player) return;
-            if (player.isMuted()) return;
-
-            player.mute();
-            const icon = muteBtn.querySelector('i');
-            icon.classList.remove('fa-volume-up');
-            icon.classList.add('fa-volume-mute');
-        }
-
-        function mute(){
-            if(!player) return;
             if (!player.isMuted()) return;
 
             player.unMute();
             const icon = muteBtn.querySelector('i');
             icon.classList.remove('fa-volume-mute');
             icon.classList.add('fa-volume-up');
+        }
+
+        function mute(){
+            if(!player) return;
+            if (player.isMuted()) return;
+
+            player.mute();
+            const icon = muteBtn.querySelector('i');
+            icon.classList.remove('fa-volume-up');
+            icon.classList.add('fa-volume-mute');
         }
 
         function setPlaybackRate(r){
@@ -728,9 +728,6 @@
         volumeSlider.addEventListener('input', function() {
             player.setVolume(parseInt(this.value));
             
-            
-            /
-            / Update mute button icon if needed
             if (parseInt(this.value) === 0) {
                 mute();
             } else {
