@@ -613,54 +613,91 @@
         }
         
         function playVideo(){
-            if(player) { 
-                player.playVideo(); 
-                updatePlayPauseIcon();
-            }
+            if(!player) return;
+            if (player.getPlayerState() === YT.PlayerState.PLAYING) return;
+
+            player.playVideo();
+            updatePlayPauseIcon();
         }
+
         function pauseVideo(){
-            if(player) { 
-                player.pauseVideo(); 
-                updatePlayPauseIcon();
-            }
+            if(!player) return;
+            if (player.getPlayerState() === YT.PlayerState.PAUSED) return;
+
+            player.pauseVideo();
+            updatePlayPauseIcon();
         }
 
         function unMute(){
-            if(player) { 
-                player.unMute();
-                muteBtn.querySelector('i').classList.remove('fa-volume-mute');
-                muteBtn.querySelector('i').classList.add('fa-volume-up');
-            }
+            if(!player) return;
+            if (player.isMuted()) return;
+
+            player.mute();
+            const icon = muteBtn.querySelector('i');
+            icon.classList.remove('fa-volume-up');
+            icon.classList.add('fa-volume-mute');
         }
+
         function mute(){
-            if(player) { 
-                player.mute();
-                muteBtn.querySelector('i').classList.remove('fa-volume-up');
-                muteBtn.querySelector('i').classList.add('fa-volume-mute');
-            }
+            if(!player) return;
+            if (!player.isMuted()) return;
+
+            player.unMute();
+            const icon = muteBtn.querySelector('i');
+            icon.classList.remove('fa-volume-mute');
+            icon.classList.add('fa-volume-up');
         }
+
         function setPlaybackRate(r){
-            if(player) {
-                player.setPlaybackRate(r); 
-                speedSelect.value = String(r);
-            }
+            if(!player) return;
+
+            const rate = Number(r);
+            const currentRate = player.getPlaybackRate();
+
+            if (currentRate === rate) return;
+
+            player.setPlaybackRate(rate);
+            speedSelect.value = rate.toString();
         }
+
         function setVolume(v){
-            if(!player)return; 
-            v=Math.max(0,Math.min(100,v)); 
-            volumeSlider.value = v; 
-            player.setVolume(v); 
-            if(v===0){
-                mute()
-            }else {
-                unMute()
+            if(!player) return;
+
+            v = Math.max(0, Math.min(100, Number(v)));
+            const current = player.getVolume();
+
+            if (current === v) return;
+
+            volumeSlider.value = v;
+            player.setVolume(v);
+
+            if (v === 0) {
+                mute();
+            } else {
+                unMute();
             }
         }
+
         function seekTo(s){
             if(player){
                 player.seekTo(s,true);
             }
         }
+
+        function debounce(fn, delay) {
+            let t;
+            return function (...args) {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), delay);
+            };
+        }
+
+        const debouncedVolumeCallback = debounce((v) => {
+            dispatchCallback('onVolumeChange', v);
+        }, 150);
+
+
+
 
         
         // Event Listeners
@@ -690,9 +727,10 @@
         
         volumeSlider.addEventListener('input', function() {
             player.setVolume(parseInt(this.value));
-            dispatchCallback('onVolumeChange', this.value)
             
-            // Update mute button icon if needed
+            
+            /
+            / Update mute button icon if needed
             if (parseInt(this.value) === 0) {
                 mute();
             } else {
@@ -700,6 +738,8 @@
                
             }
             
+            debouncedVolumeCallback(this.value);
+
             startControllerTimeout();
         });
         
