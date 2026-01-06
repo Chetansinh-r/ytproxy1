@@ -491,14 +491,19 @@
                 }
             }
             
-            if (event.data === YT.PlayerState.PLAYING) {
-                // Hide overlays when playing
+            if (isEffectivelyPlaying()) {
                 thumbnailOverlay.classList.add('hidden');
                 loadingIndicator.style.display = 'none';
+                startControllerTimeout();
+            }
+            // if (event.data === YT.PlayerState.PLAYING) {
+            //     // Hide overlays when playing
+            //     thumbnailOverlay.classList.add('hidden');
+            //     loadingIndicator.style.display = 'none';
                
                 
-                startControllerTimeout();
-            } 
+            //     startControllerTimeout();
+            // } 
             else if (event.data === YT.PlayerState.PAUSED) {
                 // Show thumbnail overlay when paused
                 thumbnailOverlay.classList.remove('hidden');
@@ -539,6 +544,11 @@
         function updateUI() {
             if (!player || typeof player.getCurrentTime !== 'function') return;
             
+            if (isEffectivelyPlaying()) {
+                thumbnailOverlay.classList.add('hidden');
+                loadingIndicator.style.display = 'none';
+            }
+    
             // Update current time
             const currentTime = player.getCurrentTime();
             currentTimeDisplay.textContent = formatTime(currentTime);
@@ -598,6 +608,30 @@
                 playerDocument.head.appendChild(style);
             }
         }
+
+        function isEffectivelyPlaying() {
+            if (!player) return false;
+
+            const state = player.getPlayerState();
+            const t = player.getCurrentTime();
+
+            // Normal playing
+            if (state === YT.PlayerState.PLAYING) return true;
+
+            // Ads case: time is moving but state isn't PLAYING
+            if (
+                t > 0 &&
+                (state === YT.PlayerState.UNSTARTED ||
+                 state === YT.PlayerState.CUED ||
+                 state === YT.PlayerState.BUFFERING)
+            ) {
+                return true;
+            }
+
+            return false;
+        }
+
+
         
         function playVideo(){
             if(!player) return;
