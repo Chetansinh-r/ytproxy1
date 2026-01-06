@@ -680,8 +680,10 @@
         muteBtn.addEventListener('click', function() {
             if (player.isMuted()) {
                 unMute();
+                dispatchCallback('onMuteChange', false)
             } else {
                 mute();
+                dispatchCallback('onMuteChange', true)
             }
             startControllerTimeout();
         });
@@ -702,6 +704,7 @@
         });
         
         speedSelect.addEventListener('change', function() {
+            dispatchCallback('onPlaybackRateChange', this.value)
             player.setPlaybackRate(parseFloat(this.value));
             startControllerTimeout();
         });
@@ -815,6 +818,7 @@
                     // Unmute with keyboard shortcut
                     if (player.isMuted()) {
                         unMute();
+                        dispatchCallback('onMuteChange', false)
                         volumeSlider.value = 80;
                         player.setVolume(80);
                        
