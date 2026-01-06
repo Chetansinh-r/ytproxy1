@@ -386,7 +386,12 @@
         const fullscreenBtn = document.getElementById('fullscreenBtn');
 
 
-        var videoId=null;
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        var videoId = getQueryParam('videoId') || '';
         var durationInitialized = false;
         let lastSeek = 0;
         let controlsUIHidden= false
@@ -548,7 +553,7 @@
                 thumbnailOverlay.classList.add('hidden');
                 loadingIndicator.style.display = 'none';
             }
-    
+
             // Update current time
             const currentTime = player.getCurrentTime();
             currentTimeDisplay.textContent = formatTime(currentTime);
