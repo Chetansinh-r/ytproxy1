@@ -210,22 +210,6 @@
             opacity: 0;
         }
         
-        .cursor-trail {
-            position: fixed;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-            transition: opacity 0.3s;
-            opacity: 0;
-        }
-        
-        .cursor-trail.visible {
-            opacity: 1;
-        }
         
         /* Thumbnail Overlay */
         .thumbnail-overlay {
@@ -325,7 +309,6 @@
     <body>
         <div id="player-container">
             <div id="youTubePlayer"></div>
-            <div class="cursor-trail" id="cursorTrail"></div>
             <div class="video-overlay" id="videoOverlay"></div>
             <div class="thumbnail-overlay" id="thumbnailOverlay"></div>
             <div class="loading-indicator" id="loadingIndicator">
@@ -384,7 +367,6 @@
         var player;
         var timerId;
         var isSeeking = false;
-        var controllerVisible = true;
         var controllerTimeout;
         
         // DOM Elements
@@ -398,9 +380,7 @@
         const seekBar = document.getElementById('seekBar');
         const progress = document.getElementById('progress');
         const controllerOverlay = document.getElementById('controllerOverlay');
-        const videoTitle = document.getElementById('videoTitle');
         const videoOverlay = document.getElementById('videoOverlay');
-        const cursorTrail = document.getElementById('cursorTrail');
         const thumbnailOverlay = document.getElementById('thumbnailOverlay');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -409,7 +389,7 @@
         var videoId=null;
         var durationInitialized = false;
         let lastSeek = 0;
-        let controlsUIHidden= true
+        let controlsUIHidden= false
         
         // Format time to MM:SS
         function formatTime(seconds) {
@@ -454,14 +434,6 @@
 
             // Hide YouTube controls
             hidePlayerControls();
-
-            if (controlsUIHidden) {
-                controllerOverlay.classList.add('hidden');
-                controllerOverlay.style.pointerEvents = 'none';
-            } else {
-                controllerOverlay.classList.remove('hidden');
-                controllerOverlay.style.pointerEvents = 'auto';
-            }
         }
 
         function loadVideo(id,sec=0){
@@ -819,12 +791,10 @@
         function startControllerTimeout() {
             if (controlsUIHidden) return;
             controllerOverlay.classList.remove('hidden');
-            videoTitle.classList.remove('hidden');
             
             clearTimeout(controllerTimeout);
             controllerTimeout = setTimeout(() => {
                 controllerOverlay.classList.add('hidden');
-                videoTitle.classList.add('hidden');
             }, 3000);
         }
 
@@ -846,19 +816,11 @@
         document.addEventListener('mousemove', function(e) {
             if (controlsUIHidden) return;
             // Update cursor trail position
-            cursorTrail.style.left = e.clientX + 'px';
-            cursorTrail.style.top = e.clientY + 'px';
-            cursorTrail.classList.add('visible');
             
             // Show controls
             controllerOverlay.classList.remove('hidden');
-            videoTitle.classList.remove('hidden');
             startControllerTimeout();
             
-            // Hide cursor trail after animation
-            setTimeout(() => {
-                cursorTrail.classList.remove('visible');
-            }, 300);
         });
         
         // Keyboard shortcuts
