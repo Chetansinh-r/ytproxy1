@@ -409,6 +409,8 @@
         var videoId=null;
         var durationInitialized = false;
         let lastSeek = 0;
+        var controlsUIHidden = false;
+
         
         // Format time to MM:SS
         function formatTime(seconds) {
@@ -696,6 +698,20 @@
             icon.classList.toggle('fa-compress', isFullscreen);
         }
 
+        function setControlsUIHidden(hidden) {
+            controlsUIHidden = !!hidden;
+
+            if (controlsUIHidden) {
+                controllerOverlay.classList.add('hidden');
+                controllerOverlay.style.pointerEvents = 'none';
+            } else {
+                controllerOverlay.classList.remove('hidden');
+                controllerOverlay.style.pointerEvents = 'auto';
+                startControllerTimeout();
+            }
+        }
+
+
 
         function debounce(fn, delay) {
             let t;
@@ -808,6 +824,8 @@
         
         // Controller visibility timeout
         function startControllerTimeout() {
+            if (controlsUIHidden) return;
+
             controllerOverlay.classList.remove('hidden');
             videoTitle.classList.remove('hidden');
             
@@ -820,6 +838,8 @@
         
         // Show controller on mouse move
         document.addEventListener('mousemove', function(e) {
+            if (controlsUIHidden) return;
+
             // Update cursor trail position
             cursorTrail.style.left = e.clientX + 'px';
             cursorTrail.style.top = e.clientY + 'px';
@@ -838,6 +858,7 @@
         
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
+            if (controlsUIHidden) return;
             if (e.target.tagName.toLowerCase() === 'input') return;
             
             switch (e.key) {
