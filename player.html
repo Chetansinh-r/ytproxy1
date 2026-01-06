@@ -409,7 +409,7 @@
         var videoId=null;
         var durationInitialized = false;
         let lastSeek = 0;
-        var controlsUIHidden = false;
+        var showControlsUI = true;
 
         
         // Format time to MM:SS
@@ -699,9 +699,9 @@
         }
 
         function setControlsUIHidden(hidden) {
-            controlsUIHidden = !!hidden;
+            showControlsUI = hidden;
 
-            if (controlsUIHidden) {
+            if (!showControlsUI) {
                 controllerOverlay.classList.add('hidden');
                 controllerOverlay.style.pointerEvents = 'none';
             } else {
@@ -824,7 +824,7 @@
         
         // Controller visibility timeout
         function startControllerTimeout() {
-            if (controlsUIHidden) return;
+            if (!showControlsUI) return;
 
             controllerOverlay.classList.remove('hidden');
             videoTitle.classList.remove('hidden');
@@ -838,7 +838,7 @@
         
         // Show controller on mouse move
         document.addEventListener('mousemove', function(e) {
-            if (controlsUIHidden) return;
+            if (!showControlsUI) return;
 
             // Update cursor trail position
             cursorTrail.style.left = e.clientX + 'px';
@@ -858,7 +858,7 @@
         
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            if (controlsUIHidden) return;
+            if (!showControlsUI) return;
             if (e.target.tagName.toLowerCase() === 'input') return;
             
             switch (e.key) {
