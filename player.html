@@ -382,19 +382,6 @@
         </div>
         <script>
 
-        window.__CMP_WASM_EXEC__ = function (iframeId, command) {
-            const iframe = document.getElementById(iframeId);
-            if (!iframe || !iframe.contentWindow) return;
-
-            try {
-                iframe.contentWindow.Function(command)();
-            } catch (e) {
-                console.error("WASM command failed:", command, e);
-            }
-        };
-        
-
-
         // Player variables
         var player;
         var timerId;
