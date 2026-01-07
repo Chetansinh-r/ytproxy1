@@ -382,14 +382,6 @@
         </div>
         <script>
 
-        window.__CMP_EXEC__ = function (command) {
-            try {
-                return Function(command)();
-            } catch (e) {
-                console.error("Command failed:", command, e);
-            }
-        };
-
         // Player variables
         var player;
         var timerId;
