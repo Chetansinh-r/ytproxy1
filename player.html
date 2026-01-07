@@ -61,6 +61,7 @@
         
         .controller-overlay.hidden {
             opacity: 0;
+            pointer-events: none;
         }
 
         .top-nav {
@@ -883,10 +884,10 @@
 
             if (controlsUIHidden) {
                 controllerOverlay.classList.add('hidden');
-                controllerOverlay.style.pointerEvents = 'none';
+                // controllerOverlay.style.pointerEvents = 'none';
             } else {
                 controllerOverlay.classList.remove('hidden');
-                controllerOverlay.style.pointerEvents = 'auto';
+                // controllerOverlay.style.pointerEvents = 'auto';
                 startControllerTimeout();
             }
         }
