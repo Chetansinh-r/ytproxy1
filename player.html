@@ -427,6 +427,8 @@
         
         // Initialize player
         function onYouTubeIframeAPIReady() {
+            setControlsUIHidden(controlsUIHidden, hideBackButton);
+
             player = new YT.Player('youTubePlayer', {
                 height: '100%',
                 width: '100%',
