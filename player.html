@@ -80,7 +80,7 @@
 
         .top-nav.hidden {
             opacity: 0;
-            pointer-events: none;
+            pointer-events: none !important;
         }
 
         .nav-btn {
@@ -252,7 +252,7 @@
         
         .thumbnail-overlay.hidden {
             opacity: 0;
-            pointer-events: none;
+            pointer-events: none !important;
         }
         
         /* Loading Indicator */
@@ -334,9 +334,8 @@
                 <div class="spinner"></div>
                 <div class="loading-text">Loading Video...</div>
             </div>
-            
-            
         </div>
+
         <div class="controller-overlay" id="controllerOverlay">
             <div class="progress-container">
                 <div class="time-display" id="currentTime">0:00</div>
@@ -382,6 +381,7 @@
             </div>
         </div>
         <script>
+
         // Player variables
         var player;
         var timerId;
@@ -527,14 +527,6 @@
                 loadingIndicator.style.display = 'none';
                 startControllerTimeout();
             }
-            // if (event.data === YT.PlayerState.PLAYING) {
-            //     // Hide overlays when playing
-            //     thumbnailOverlay.classList.add('hidden');
-            //     loadingIndicator.style.display = 'none';
-               
-                
-            //     startControllerTimeout();
-            // } 
             else if (event.data === YT.PlayerState.PAUSED) {
                 // Show thumbnail overlay when paused
                 thumbnailOverlay.classList.remove('hidden');
@@ -884,10 +876,8 @@
 
             if (controlsUIHidden) {
                 controllerOverlay.classList.add('hidden');
-                // controllerOverlay.style.pointerEvents = 'none';
             } else {
                 controllerOverlay.classList.remove('hidden');
-                // controllerOverlay.style.pointerEvents = 'auto';
                 startControllerTimeout();
             }
         }
