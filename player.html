@@ -416,7 +416,7 @@
         var videoId = getQueryParam('videoId') || '';
         var durationInitialized = false;
         let lastSeek = 0;
-        let controlsUIHidden= getQueryParam('controlsUIHidden') || true;
+        let controlsUIHidden= true;
         let hideBackButton= true
         
         // Format time to MM:SS
@@ -956,6 +956,14 @@
         document.addEventListener('contextmenu', function(e) {
     e.preventDefault();
 });
+        window.__CMP_EXEC__ = function (command) {
+        try {
+            return Function(command)();
+        } catch (e) {
+            console.error("Command failed:", command, e);
+        }
+    };
+
         </script>
     </body>
 </html>
