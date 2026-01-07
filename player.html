@@ -416,7 +416,7 @@
         var videoId = getQueryParam('videoId') || '';
         var durationInitialized = false;
         let lastSeek = 0;
-        let controlsUIHidden= true
+        let controlsUIHidden= getQueryParam('controlsUIHidden') || true;
         let hideBackButton= true
         
         // Format time to MM:SS
@@ -925,16 +925,17 @@
                     break;
                 case 'f':
                     // Toggle fullscreen
-                    const container = document.getElementById('player-container');
-                    if (!document.fullscreenElement) {
-                        if (container.requestFullscreen) {
-                            container.requestFullscreen();
-                        }
-                    } else {
-                        if (document.exitFullscreen) {
-                            document.exitFullscreen();
-                        }
-                    }
+                    dispatchCallback('onFullscreenToggle', 'true');
+                    // const container = document.getElementById('player-container');
+                    // if (!document.fullscreenElement) {
+                    //     if (container.requestFullscreen) {
+                    //         container.requestFullscreen();
+                    //     }
+                    // } else {
+                    //     if (document.exitFullscreen) {
+                    //         document.exitFullscreen();
+                    //     }
+                    // }
                     break;
                 case 'u':
                     // Unmute with keyboard shortcut
